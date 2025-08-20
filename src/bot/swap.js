@@ -135,7 +135,7 @@ const successSwapHandler = async (tx, tradeEntry, tokenA, tokenB) => {
 		}
 		if (cache.config.tradingStrategy === "arbitrage") {
 			/** check real amounts because Jupiter SDK returns wrong amounts
-			 *  when trading ARB TokenA <> TokenA (arbitrage)
+			 *  when trading TokenA <> TokenA (arbitrage)
 			 */
 
 			try {
@@ -147,7 +147,7 @@ const successSwapHandler = async (tx, tradeEntry, tokenA, tokenB) => {
 
 				const fetcher = async (retry) => {
 
-					console.log('Looking for ARB trade result via RPC.');
+					console.log('Looking for arbitrage trade result via RPC.');
 					rcount++;
 
 					if (rcount>=retries){

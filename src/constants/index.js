@@ -88,6 +88,6 @@ const CONFIG_INITIAL_STATE = {
 };
 
 module.exports = {
-	DISCORD_INVITE_URL: "https://discord.gg/Z8JJCuq4",
+	DISCORD_INVITE_URL: "https://discord.gg/jupiter",
 	CONFIG_INITIAL_STATE,
 };

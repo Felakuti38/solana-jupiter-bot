@@ -198,7 +198,7 @@ const setup = async () => {
 			}
 		});
 		cache.isSetupDone = true;
-		spinner.succeed("Checking to ensure you are ARB ready...\n====================\n");
+		spinner.succeed("Bot setup completed successfully!\n====================\n");
 		return { jupiter, tokenA, tokenB, wallet };
 	} catch (error) {
 		if (spinner)

@@ -159,7 +159,7 @@ function Tokens() {
 										onChange={(tokenSymbol) =>
 											handleTokenChange("tokenB", tokenSymbol)
 										}
-										placeholder="ARB"
+										placeholder="SOL"
 									/>
 								</Text>
 							) : (

@@ -11,7 +11,6 @@ const {
 	toNumber,
 	updateIterationsPerMin,
 	checkRoutesResponse,
-	checkArbReady,
 } = require("../utils");
 const { handleExit, logExit } = require("./exit");
 const cache = require("./cache");
@@ -242,7 +241,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 
 const arbitrageStrategy = async (jupiter, tokenA) => {
 
-	//console.log('ARB STRAT ACTIVE');
+	//console.log('ARBITRAGE STRATEGY ACTIVE');
 
 	cache.iteration++;
 	const date = new Date();
@@ -459,9 +458,6 @@ const watcher = async (jupiter, tokenA, tokenB) => {
 
 const run = async () => {
 	try {
-		// Are they ARB ready and part of the community?
-		await checkArbReady();
-
 		// set everything up
         const { jupiter, tokenA, tokenB, wallet } = await setup();
 

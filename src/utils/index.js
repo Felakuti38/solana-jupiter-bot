@@ -154,7 +154,7 @@ function displayMessage(message) {
     const displayMessage = `${padding}\x1b[93m${message}\x1b[0m${padding}`; // Create display message with padding and light yellow color ANSI escape codes
 
 	console.log("\n");
-	console.log(`\x1b[1m${'ARB PROTOCOL BOT SETUP TESTS'}\x1b[0m\n`); 
+	console.log(`\x1b[1m${'SOLANA JUPITER BOT SETUP TESTS'}\x1b[0m\n`); 
 	console.log("\x1b[93m*\x1b[0m".repeat(lineLength / 2)); // Display top border in light yellow
     console.log(`\n${displayMessage}\n`); // Display message
     console.log("\x1b[93m*\x1b[0m".repeat(lineLength / 2)); // Display bottom border in light yellow
@@ -182,44 +182,8 @@ const checkWallet = () => {
 }
 
 const checkArbReady = async () => {
-	try{
-		// Support the community
-		const ARB_TOKEN =  '9tzZzEHsKnwFL1A3DyFJwj36KnZj3gZ7g4srWp9YTEoh';
-
-		var checkBalance = Number(0);
-		const connection = new Connection(process.env.DEFAULT_RPC);
-		wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
-
-		const tokenAccounts = await connection.getParsedTokenAccountsByOwner(wallet.publicKey, {
-			mint: new PublicKey(ARB_TOKEN)
-		});
-
-		let totalTokenBalance = BigInt(0);
-		tokenAccounts.value.forEach((accountInfo) => {
-			const parsedInfo = accountInfo.account.data.parsed.info;
-			totalTokenBalance += BigInt(parsedInfo.tokenAmount.amount);
-		});
-
-		// Do you support the project and the hard work of the developers?
-		var arb_ready = Number(totalTokenBalance);
-		if (arb_ready < 10000000000) {
-			console.clear(); // Clear console before displaying message
-			displayMessage("You are not ARB ready! You need to hold at least 10K in ARB in your trading wallet to use this bot.");
-			process.exit(1);
-		}
-
-        // Check if there are no ATAs for the specified token
-        if (tokenAccounts.value.length === 0) {
-            console.clear(); // Clear console before displaying message
-            displayMessage("You are not ARB ready! You need to hold at least 10K in ARB in your trading wallet to use this bot.");
-            process.exit(1);
-        }
-		return true;
-	} catch (err){
-		console.clear(); // Clear console before displaying message
-		displayMessage("You do not seem to be ARB ready!\n\nCheck the .ENV file to see your RPC is set up properly and your wallet is set to the correct private key.");
-		process.exit(1);
-	}
+	// ARB token requirement removed - bot is now open to all users
+	return true;
 };
 
 module.exports = {

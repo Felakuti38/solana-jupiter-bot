@@ -40,7 +40,7 @@ const IntroTitle = () => {
 	return (
 		<Box flexDirection="row">
 			<Gradient colors={colorsSet.slice(0, 4)}>
-				<BigText text={"ARB"} font="tiny"></BigText>
+				<BigText text={"Solana"} font="tiny"></BigText>
 			</Gradient>
 			<Gradient colors={colorsSet.slice(4, 8)}>
 				<BigText text="Jupiter" font="tiny" lineHeight={1}></BigText>

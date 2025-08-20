@@ -52,7 +52,7 @@ async function intro() {
 
 				ui.div(
 					{
-						text: g(`ARB SOLANA BOT - ${package.version}`),
+						text: g(`SOLANA JUPITER BOT - ${package.version}`),
 						width: 50,
 						align: "center",
 						padding: [1, 0, 1, 0],
