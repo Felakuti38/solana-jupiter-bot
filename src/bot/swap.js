@@ -1,18 +1,12 @@
 const { calculateProfit, toDecimal, storeItInTempAsJSON } = require("../utils");
 const cache = require("./cache");
 const { setTimeout } = require("timers/promises");
+const { performance } = require("perf_hooks");
 const { balanceCheck } = require("./setup");
 const { checktrans } = require("../utils/transaction.js");
 const promiseRetry = require("promise-retry");
 
-const waitabit = async (ms) => {
-	const mySecondPromise = new Promise(function(resolve,reject){
-		console.log('construct a promise...')
-		setTimeout(() => {
-			reject(console.log('Error in promise'));
-		},ms)
-	})
-  }
+// Use timers/promises setTimeout directly for async delays
 
 const swap = async (jupiter, route) => {
 	try {

@@ -5,6 +5,7 @@ const { clearInterval } = require("timers");
 const { PublicKey } = require("@solana/web3.js");
 const JSBI = require('jsbi');
 const { setTimeout } = require("timers/promises");
+const { performance } = require("perf_hooks");
 const {
 	calculateProfit,
 	toDecimal,
@@ -19,14 +20,7 @@ const { setup, getInitialotherAmountThreshold, checkTokenABalance } = require(".
 const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
 
-const waitabit = async (ms) => {
-	const mySecondPromise = new Promise(function(resolve,reject){
-		console.log('construct a promise...')
-		setTimeout(() => {
-			reject(console.log('Error in promise'));
-		},ms)
-	})
-}
+// Use timers/promises setTimeout directly for async delays
 
 function getRandomAmt(runtime) {
 	const min = Math.ceil((runtime*10000)*0.99);
@@ -194,7 +188,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 					error: tx.error?.code === 6001 ? "Slippage Tolerance Exceeded" : tx.error?.message || null,
 				};
 
-				var waittime = await waitabit(100);
+				await setTimeout(100);
 
 				// handle TX results
 				if (tx.error) {

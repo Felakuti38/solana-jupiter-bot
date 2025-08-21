@@ -2,9 +2,9 @@ const chalk = require("chalk");
 const fs = require("fs");
 const ora = require("ora-classic");
 const { logExit } = require("../bot/exit");
-const JSBI = require('jsbi');
 const bs58 = require("bs58");
 const { PublicKey, Connection, Keypair } = require("@solana/web3.js");
+const { performance } = require("perf_hooks");
 require("dotenv").config();
 
 const createTempDir = () => !fs.existsSync("./temp") && fs.mkdirSync("./temp");
@@ -188,7 +188,7 @@ const checkArbReady = async () => {
 
 		var checkBalance = Number(0);
 		const connection = new Connection(process.env.DEFAULT_RPC);
-		wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
+		const wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
 
 		const tokenAccounts = await connection.getParsedTokenAccountsByOwner(wallet.publicKey, {
 			mint: new PublicKey(ARB_TOKEN)

@@ -4,6 +4,7 @@ const React = require("react");
 const importJsx = require("import-jsx");
 const { render } = require("ink");
 const meow = require("meow");
+const { logExit } = require("./bot/exit");
 
 // check for .env file
 const { checkForEnvFile, checkWallet, checkArbReady } = require("./utils");
@@ -13,24 +14,10 @@ require("dotenv").config();
 
 checkWallet();
 
-const isArbReady = async () => {
-    try {
-        // Display the message
-        await checkArbReady();
-        return true; // If checkArbReady completes without errors, return true
-    } catch (error) {
-        spinner.text = chalk.black.bgRedBright(
-            `\n${error.message}\n`
-        );
-        logExit(1, error);
-        process.exit(1); // Exit the process if there's an error
-    }
-};
-
-isArbReady().then((arbReady) => {
-	if (!arbReady) {
-        process.exit(1); // Exit the process if ARB is not ready
-    }
+// Ensure environment prerequisites before starting the wizard
+checkArbReady().catch((error) => {
+    logExit(1, error);
+    process.exit(1);
 });
 
 const wizard = importJsx("./wizard/index");

@@ -3,14 +3,7 @@ const chalk = require("chalk");
 const ora = require("ora-classic");
 const bs58 = require("bs58");
 const { Jupiter } = require("@jup-ag/core");
-const { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } = require("@solana/web3.js");
-
-var JSBI = (require('jsbi'));
-var invariant = (require('tiny-invariant'));
-var _Decimal = (require('decimal.js'));
-var _Big = (require('big.js'));
-var toFormat = (require('toformat'));
-var anchor = require('@project-serum/anchor');
+const { Connection, Keypair, PublicKey } = require("@solana/web3.js");
 
 const { logExit } = require("./exit");
 const { loadConfigFile, toDecimal } = require("../utils");
@@ -76,8 +69,8 @@ const checkTokenABalance = async (tokenA, initialTradingBalance) => {
 	try {
 		// Check the balance of TokenA to make sure there is enough to trade with
 		var realbalanceTokenA = await balanceCheck(tokenA);
-		bal1 = toDecimal(realbalanceTokenA,tokenA.decimals);
-		bal2 = toDecimal(initialTradingBalance,tokenA.decimals);
+		const bal1 = toDecimal(realbalanceTokenA,tokenA.decimals);
+		const bal2 = toDecimal(initialTradingBalance,tokenA.decimals);
 
 		if (realbalanceTokenA < initialTradingBalance) {
 			throw new Error(`\x1b[93mThere is insufficient balance in your wallet of ${tokenA.symbol}\x1b[0m
