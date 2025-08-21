@@ -32,6 +32,7 @@
 		"axios": "^0.30.0",
 		"bs58": "^5.0.0",
 		"cliui": "^7.0.4",
+		"dotenv": "^16.0.0",
 		"express": "^4.20.0",
 		"gradient-string": "^2.0.1",
 		"import-jsx": "^4.0.1",
