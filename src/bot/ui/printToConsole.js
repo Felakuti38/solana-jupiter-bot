@@ -180,6 +180,9 @@ function printToConsole({
 				`STRATEGY: ${chalk.bold[cache.ui.defaultColor](
 					cache.config.tradingStrategy
 				)}`,
+				`SAFETY: ${chalk.bold.greenBright(
+					cache.config.advanced?.safetyLevel || 'BALANCED'
+				)}`,
 				{
 					text: statusMessage,
 				}
@@ -238,7 +241,9 @@ function printToConsole({
 					text: " ",
 				},
 				{
-					text: " ",
+					text: `SAFETY CHECKS: ${chalk.cyanBright(
+						`${cache.safetyStats.totalSafetyChecks}/${cache.safetyStats.failedSafetyChecks}`
+					)}`,
 				}
 			);
 

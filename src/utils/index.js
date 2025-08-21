@@ -186,6 +186,297 @@ const checkArbReady = async () => {
 	return true;
 };
 
+// New safety check utilities
+const { Connection, PublicKey } = require("@solana/web3.js");
+const axios = require("axios");
+
+/**
+ * Analyze token contract for potential risks
+ */
+const analyzeTokenContract = async (tokenAddress, connection) => {
+	try {
+		const tokenPublicKey = new PublicKey(tokenAddress);
+		
+		// Get token account info
+		const accountInfo = await connection.getAccountInfo(tokenPublicKey);
+		if (!accountInfo) {
+			return { riskScore: 100, risks: ["Token account not found"] };
+		}
+
+		// Get token metadata
+		const metadata = await connection.getParsedAccountInfo(tokenPublicKey);
+		
+		// Basic risk assessment
+		let riskScore = 0;
+		const risks = [];
+
+		// Check if token has reasonable supply
+		if (metadata?.value?.data?.parsed?.info?.supply) {
+			const supply = Number(metadata.value.data.parsed.info.supply);
+			if (supply < 1000000) { // Less than 1M supply
+				riskScore += 20;
+				risks.push("Low supply token");
+			}
+		}
+
+		// Check decimals
+		if (metadata?.value?.data?.parsed?.info?.decimals > 18) {
+			riskScore += 15;
+			risks.push("Unusual decimals");
+		}
+
+		return { riskScore: Math.min(riskScore, 100), risks };
+	} catch (error) {
+		console.log("Contract analysis error:", error.message);
+		return { riskScore: 50, risks: ["Analysis failed"] };
+	}
+};
+
+/**
+ * Check token liquidity across major DEXes
+ */
+const checkLiquidity = async (tokenAddress) => {
+	try {
+		// This would ideally check multiple DEXes
+		// For now, we'll use a simplified approach
+		const response = await axios.get(`https://public-api.solscan.io/token/meta?tokenAddress=${tokenAddress}`);
+		
+		if (response.data && response.data.data) {
+			const data = response.data.data;
+			
+			// Calculate liquidity score based on available data
+			let liquidityScore = 0;
+			
+			if (data.price) {
+				liquidityScore += 30;
+			}
+			if (data.volume24h) {
+				liquidityScore += 30;
+			}
+			if (data.marketCap) {
+				liquidityScore += 40;
+			}
+			
+			return liquidityScore;
+		}
+		
+		return 0;
+	} catch (error) {
+		console.log("Liquidity check error:", error.message);
+		return 0;
+	}
+};
+
+/**
+ * Check 24h volume for token
+ */
+const check24hVolume = async (tokenAddress) => {
+	try {
+		const response = await axios.get(`https://public-api.solscan.io/token/meta?tokenAddress=${tokenAddress}`);
+		
+		if (response.data && response.data.data && response.data.data.volume24h) {
+			return Number(response.data.data.volume24h);
+		}
+		
+		return 0;
+	} catch (error) {
+		console.log("Volume check error:", error.message);
+		return 0;
+	}
+};
+
+/**
+ * Simulate transaction to check for unexpected fees
+ */
+const simulateTransaction = async (jupiter, route) => {
+	try {
+		const simulation = await jupiter.simulateTransaction({
+			routeInfo: route,
+			userPublicKey: route.userPublicKey
+		});
+		
+		if (simulation.error) {
+			return { 
+				success: false, 
+				error: simulation.error,
+				fee: 0,
+				estimatedOutput: 0
+			};
+		}
+		
+		// Calculate estimated fee
+		const estimatedFee = simulation.fee || 0;
+		const estimatedOutput = simulation.outputAmount || route.outAmount;
+		
+		return {
+			success: true,
+			fee: estimatedFee,
+			estimatedOutput: estimatedOutput,
+			priceImpact: simulation.priceImpact || 0
+		};
+	} catch (error) {
+		console.log("Transaction simulation error:", error.message);
+		return { 
+			success: false, 
+			error: error.message,
+			fee: 0,
+			estimatedOutput: 0
+		};
+	}
+};
+
+/**
+ * Calculate dynamic position size based on risk
+ */
+const calculatePositionSize = (balance, riskScore, maxRiskPerTrade = 0.02) => {
+	// Kelly criterion inspired position sizing
+	const riskAdjustedSize = Math.max(0.01, 1 - (riskScore / 100)); // Minimum 1%
+	const positionSize = balance * maxRiskPerTrade * riskAdjustedSize;
+	
+	return Math.min(positionSize, balance * 0.1); // Max 10% of balance
+};
+
+/**
+ * Comprehensive pre-trade safety check
+ */
+const preTradeSafetyCheck = async (jupiter, route, token, balance, safetyLevel = 'BALANCED') => {
+	const safetyConfigs = {
+		FAST: {
+			preChecks: false,
+			simulation: false,
+			contractAnalysis: false,
+			minLiquidity: 0,
+			minVolume: 0,
+			maxRiskScore: 100
+		},
+		BALANCED: {
+			preChecks: true,
+			simulation: true,
+			contractAnalysis: false,
+			minLiquidity: 30,
+			minVolume: 1000,
+			maxRiskScore: 70
+		},
+		SAFE: {
+			preChecks: true,
+			simulation: true,
+			contractAnalysis: true,
+			minLiquidity: 50,
+			minVolume: 10000,
+			maxRiskScore: 50
+		}
+	};
+
+	const config = safetyConfigs[safetyLevel] || safetyConfigs.BALANCED;
+	const connection = new Connection(process.env.DEFAULT_RPC);
+	
+	// Update safety statistics
+	if (global.cache) {
+		global.cache.safetyStats.totalSafetyChecks++;
+		global.cache.safetyStats.lastSafetyCheck = new Date();
+	}
+	
+	try {
+		// 1. Contract analysis (if enabled)
+		if (config.contractAnalysis) {
+			const contractAnalysis = await analyzeTokenContract(token.address, connection);
+			if (contractAnalysis.riskScore > config.maxRiskScore) {
+				if (global.cache) {
+					global.cache.safetyStats.failedSafetyChecks++;
+				}
+				return {
+					safe: false,
+					reason: `Contract risk too high: ${contractAnalysis.riskScore}/100`,
+					details: contractAnalysis.risks
+				};
+			}
+		}
+
+		// 2. Liquidity check (if enabled)
+		if (config.preChecks) {
+			const liquidityScore = await checkLiquidity(token.address);
+			if (liquidityScore < config.minLiquidity) {
+				if (global.cache) {
+					global.cache.safetyStats.failedSafetyChecks++;
+				}
+				return {
+					safe: false,
+					reason: `Insufficient liquidity: ${liquidityScore}/100`,
+					details: { liquidityScore, required: config.minLiquidity }
+				};
+			}
+		}
+
+		// 3. Volume check (if enabled)
+		if (config.preChecks) {
+			const volume24h = await check24hVolume(token.address);
+			if (volume24h < config.minVolume) {
+				if (global.cache) {
+					global.cache.safetyStats.failedSafetyChecks++;
+				}
+				return {
+					safe: false,
+					reason: `Low 24h volume: $${volume24h}`,
+					details: { volume24h, required: config.minVolume }
+				};
+			}
+		}
+
+		// 4. Transaction simulation (if enabled)
+		if (config.simulation) {
+			const simulation = await simulateTransaction(jupiter, route);
+			if (!simulation.success) {
+				if (global.cache) {
+					global.cache.safetyStats.failedSafetyChecks++;
+				}
+				return {
+					safe: false,
+					reason: `Transaction simulation failed: ${simulation.error}`,
+					details: simulation
+				};
+			}
+			
+			// Check for excessive fees
+			const feePercentage = (simulation.fee / balance) * 100;
+			if (feePercentage > 5) { // More than 5% fee
+				if (global.cache) {
+					global.cache.safetyStats.failedSafetyChecks++;
+				}
+				return {
+					safe: false,
+					reason: `Excessive fees: ${feePercentage.toFixed(2)}%`,
+					details: { fee: simulation.fee, feePercentage }
+				};
+			}
+		}
+
+		// 5. Calculate dynamic position size
+		const contractAnalysis = config.contractAnalysis ? 
+			await analyzeTokenContract(token.address, connection) : 
+			{ riskScore: 50 };
+		
+		const positionSize = calculatePositionSize(balance, contractAnalysis.riskScore);
+
+		return {
+			safe: true,
+			positionSize,
+			riskScore: contractAnalysis.riskScore,
+			details: {
+				liquidityScore: config.preChecks ? await checkLiquidity(token.address) : 0,
+				volume24h: config.preChecks ? await check24hVolume(token.address) : 0,
+				simulation: config.simulation ? await simulateTransaction(jupiter, route) : null
+			}
+		};
+	} catch (error) {
+		console.log("Safety check error:", error.message);
+		return {
+			safe: false,
+			reason: `Safety check failed: ${error.message}`,
+			details: { error: error.message }
+		};
+	}
+};
+
 module.exports = {
 	createTempDir,
 	storeItInTempAsJSON,
@@ -200,4 +491,11 @@ module.exports = {
 	checkForEnvFile,
 	checkArbReady,
 	checkWallet,
+	// New safety functions
+	analyzeTokenContract,
+	checkLiquidity,
+	check24hVolume,
+	simulateTransaction,
+	calculatePositionSize,
+	preTradeSafetyCheck,
 };

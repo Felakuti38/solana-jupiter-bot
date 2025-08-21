@@ -81,6 +81,21 @@ const cache = {
 		sell: 0,
 	},
 	isSetupDone: false,
+	// Safety and risk management
+	safetyStats: {
+		totalSafetyChecks: 0,
+		failedSafetyChecks: 0,
+		lastSafetyCheck: null,
+	},
+	dailyStats: {
+		startTime: new Date(),
+		totalTrades: 0,
+		successfulTrades: 0,
+		failedTrades: 0,
+		totalProfit: 0,
+		totalLoss: 0,
+	},
+	concurrentTrades: 0,
 };
 
 module.exports = cache;

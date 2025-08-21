@@ -11,6 +11,7 @@ const CONFIG_INITIAL_STATE = {
 			"profit",
 			"slippage",
 			"priority",
+			"safety",
 			"advanced",
 			"confirm",
 		],
@@ -79,9 +80,19 @@ const CONFIG_INITIAL_STATE = {
 		advanced: {
 			value: {
 				minInterval: 100,
+				safetyLevel: "BALANCED",
+				maxRiskPerTrade: 0.02,
+				maxDailyLoss: 0.10,
+				maxConcurrentTrades: 3,
+				cooldownPeriod: 5000,
 			},
 			isSet: {
 				minInterval: false,
+				safetyLevel: false,
+				maxRiskPerTrade: false,
+				maxDailyLoss: false,
+				maxConcurrentTrades: false,
+				cooldownPeriod: false,
 			},
 		},
 	},

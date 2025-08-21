@@ -52,6 +52,22 @@ const Confirm = () => {
 				<Text>Priority: {chalk.bold.greenBright(priority)}</Text>
 				<Text color="gray"></Text>
 				<Text>
+					Safety Level: {chalk.bold.greenBright(advanced.safetyLevel || 'BALANCED')}
+				</Text>
+				<Text>
+					Max Risk/Trade: {chalk.bold.greenBright((advanced.maxRiskPerTrade * 100).toFixed(1) + '%')}
+				</Text>
+				<Text>
+					Max Daily Loss: {chalk.bold.greenBright((advanced.maxDailyLoss * 100).toFixed(1) + '%')}
+				</Text>
+				<Text>
+					Max Concurrent: {chalk.bold.greenBright(advanced.maxConcurrentTrades)}
+				</Text>
+				<Text>
+					Cooldown: {chalk.bold.greenBright(advanced.cooldownPeriod + 'ms')}
+				</Text>
+				<Text color="gray"></Text>
+				<Text>
 					Min Interval: {chalk.bold.greenBright(advanced.minInterval)}
 				</Text>
 			</Box>

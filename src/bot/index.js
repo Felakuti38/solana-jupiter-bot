@@ -11,9 +11,11 @@ const {
 	toNumber,
 	updateIterationsPerMin,
 	checkRoutesResponse,
+	preTradeSafetyCheck,
 } = require("../utils");
 const { handleExit, logExit } = require("./exit");
 const cache = require("./cache");
+global.cache = cache; // Make cache globally accessible for safety checks
 const { setup, getInitialotherAmountThreshold, checkTokenABalance } = require("./setup");
 const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
@@ -126,10 +128,28 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 			simulatedProfit,
 		});
 
+		// Pre-trade safety check
+		const safetyCheck = await preTradeSafetyCheck(
+			jupiter,
+			route,
+			inputToken,
+			amountToTrade,
+			cache.config.advanced?.safetyLevel || 'BALANCED'
+		);
+
+		// Log safety check results
+		if (!safetyCheck.safe) {
+			console.log(`🚨 Safety check failed: ${safetyCheck.reason}`);
+			if (safetyCheck.details) {
+				console.log(`Details:`, safetyCheck.details);
+			}
+		}
+
 		// check profitability and execute tx
 		let tx, performanceOfTx;
 		if (
 			!cache.swappingRightNow &&
+			safetyCheck.safe &&
 			(cache.hotkeys.e ||
 				cache.hotkeys.r ||
 				simulatedProfit >= cache.config.minPercProfit)
@@ -337,10 +357,28 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			simulatedProfit,
 		});
 
+		// Pre-trade safety check
+		const safetyCheck = await preTradeSafetyCheck(
+			jupiter,
+			route,
+			inputToken,
+			amountToTrade,
+			cache.config.advanced?.safetyLevel || 'BALANCED'
+		);
+
+		// Log safety check results
+		if (!safetyCheck.safe) {
+			console.log(`🚨 Safety check failed: ${safetyCheck.reason}`);
+			if (safetyCheck.details) {
+				console.log(`Details:`, safetyCheck.details);
+			}
+		}
+
 		// check profitability and execute tx
 		let tx, performanceOfTx;
 		if (
 			!cache.swappingRightNow &&
+			safetyCheck.safe &&
 			(cache.hotkeys.e ||
 				cache.hotkeys.r ||
 				simulatedProfit >= minPercProfitRnd)
