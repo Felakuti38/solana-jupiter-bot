@@ -14,7 +14,8 @@
 		"wizard": "node ./src/index.js",
 		"start": "node --no-deprecation ./src/index.js && node --no-deprecation ./src/bot/index.js",
 		"trade": "node --no-deprecation ./src/bot/index.js",
-		"test": "xo && ava",
+		"test": "ava",
+		"lint": "xo",
 		"transaction": "node ./src/utils/transaction.js"
 	},
 	"files": [
@@ -62,8 +63,33 @@
 	},
 	"xo": {
 		"extends": "xo-react",
+		"envs": ["node"],
 		"rules": {
-			"react/prop-types": "off"
+			"react/prop-types": "off",
+			"unicorn/prefer-module": "off",
+			"unicorn/filename-case": "off",
+			"unicorn/prevent-abbreviations": "off",
+			"unicorn/switch-case-braces": "off",
+			"import/extensions": "off",
+			"import/order": "off",
+			"import/newline-after-import": "off",
+			"n/no-unpublished-bin": "off",
+			"n/prefer-global/process": "off",
+			"quotes": "off",
+			"jsx-quotes": "off",
+			"object-curly-spacing": "off",
+			"react/jsx-tag-spacing": "off",
+			"react/function-component-definition": "off",
+			"react/self-closing-comp": "off",
+			"capitalized-comments": "off",
+			"operator-linebreak": "off",
+			"arrow-parens": "off",
+			"arrow-body-style": "off",
+			"eol-last": "off",
+			"padding-line-between-statements": "off",
+			"prefer-destructuring": "off",
+			"object-shorthand": "off",
+			"indent": "off"
 		}
 	},
 	"devDependencies": {
@@ -80,7 +106,9 @@
 		"eslint-plugin-react-hooks": "^4.5.0",
 		"ink-testing-library": "^2.1.0",
 		"prettier": "2.7.1",
-		"typescript": "^4.6.4"
+		"typescript": "^4.6.4",
+		"ava": "^4.3.3",
+		"xo": "^0.54.2"
 	},
 	"resolutions": {
 		"@solana/buffer-layout": "4.0.0"
