@@ -2,7 +2,7 @@ const ui = require("cliui")({ width: 140 });
 const chalk = require("chalk");
 const gradient = require("gradient-string");
 
-const package = require("../../../package.json");
+const pkg = require("../../../package.json");
 const { DISCORD_INVITE_URL } = require("../../constants");
 
 const universeSize = 15;
@@ -52,7 +52,7 @@ async function intro() {
 
 				ui.div(
 					{
-						text: g(`SOLANA JUPITER BOT - ${package.version}`),
+						text: g(`SOLANA JUPITER BOT - ${pkg.version}`),
 						width: 50,
 						align: "center",
 						padding: [1, 0, 1, 0],
