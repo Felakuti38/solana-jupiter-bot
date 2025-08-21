@@ -95,9 +95,9 @@ const checktrans = async (txid,wallet_address) => {
             // Outgoing SOL native mgmt
             // Handle transfers of SOL that would not show up due to wrapping
             if (transresp.meta.innerInstructions){
-                for (instructions of transresp.meta.innerInstructions){
+                for (const instructions of transresp.meta.innerInstructions){
                     if(instructions.instructions){
-                        for (parsed of instructions.instructions){
+                        for (const parsed of instructions.instructions){
                             //console.log(JSON.stringify(parsed, null, 4));
                             if (parsed.parsed){
                                 if (parsed.parsed.type=='transferChecked'){
@@ -118,27 +118,27 @@ const checktrans = async (txid,wallet_address) => {
             }
 
             // Pre Token Balance Handling
-            for (token of transresp.meta.preTokenBalances){
+            for (const token of transresp.meta.preTokenBalances){
                 if (token.owner==wallet_address){
                     transaction_changes[token.mint.toString()] = {status: transstatus, start: token.uiTokenAmount.amount, decimals: token.uiTokenAmount.decimals};
                 };
             }
 
             // Post Token Handling
-            for (token of transresp.meta.postTokenBalances){
+            for (const token of transresp.meta.postTokenBalances){
                 if (token.owner==wallet_address){
                     if (transaction_changes[token.mint]?.start) {
                         // Case where token account existed already
-                        diff = Number(token.uiTokenAmount.amount)-Number(transaction_changes[token.mint].start);
-                        diffdec = toDecimal(diff,transaction_changes[token.mint].decimals);
+                        const diff = Number(token.uiTokenAmount.amount)-Number(transaction_changes[token.mint].start);
+                        const diffdec = toDecimal(diff,transaction_changes[token.mint].decimals);
                         transaction_changes[token.mint] = {...transaction_changes[token.mint], end: token.uiTokenAmount.amount, change: diff} 
                     } else {
                         // Case where token did not exist yet
                         // Set the initial to 0
                         transaction_changes[token.mint] = {status: transstatus, start: 0, decimals: token.uiTokenAmount.decimals};
                         // Calculate the difference
-                        diff = Number(token.uiTokenAmount.amount)-Number(transaction_changes[token.mint].start);
-                        diffdec = toDecimal(diff,transaction_changes[token.mint].decimals);
+                        const diff = Number(token.uiTokenAmount.amount)-Number(transaction_changes[token.mint].start);
+                        const diffdec = toDecimal(diff,transaction_changes[token.mint].decimals);
                         transaction_changes[token.mint] = {...transaction_changes[token.mint], end: token.uiTokenAmount.amount, change: diff} 
                     }
                 }

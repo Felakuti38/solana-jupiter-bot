@@ -22,10 +22,9 @@ const wrapUnwrapSOL = cache.wrapUnwrapSOL;
 // Account balance code
 const balanceCheck = async (checkToken) => {
 	let checkBalance = Number(0);
-	let t = Number(0);
 
 	const connection = new Connection(process.env.DEFAULT_RPC);
-	wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
+	const wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
 
 	if (wrapUnwrapSOL && checkToken.address === 'So11111111111111111111111111111111111111112') {
 		// This is where Native balance is needing to be checked and not the Wrapped SOL ATA
@@ -76,8 +75,8 @@ const checkTokenABalance = async (tokenA, initialTradingBalance) => {
 	try {
 		// Check the balance of TokenA to make sure there is enough to trade with
 		var realbalanceTokenA = await balanceCheck(tokenA);
-		bal1 = toDecimal(realbalanceTokenA,tokenA.decimals);
-		bal2 = toDecimal(initialTradingBalance,tokenA.decimals);
+		const bal1 = toDecimal(realbalanceTokenA,tokenA.decimals);
+		const bal2 = toDecimal(initialTradingBalance,tokenA.decimals);
 
 		if (realbalanceTokenA < initialTradingBalance) {
 			throw new Error(`\x1b[93mThere is insufficient balance in your wallet of ${tokenA.symbol}\x1b[0m
@@ -91,6 +90,7 @@ const checkTokenABalance = async (tokenA, initialTradingBalance) => {
 		console.error(`\n====================\n\n${error.message}\n====================\n`);
 		// Return an appropriate error code or rethrow the error if necessary
 		process.exit(1); // Exiting with a non-zero code to indicate failure
+		return 0; // This line will never be reached but satisfies the function signature
 	}
 }
 

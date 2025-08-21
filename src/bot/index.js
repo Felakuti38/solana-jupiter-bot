@@ -20,13 +20,12 @@ const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
 
 const waitabit = async (ms) => {
-	const mySecondPromise = new Promise(function(resolve,reject){
-		console.log('construct a promise...')
+	return new Promise((resolve) => {
 		setTimeout(() => {
-			reject(console.log('Error in promise'));
-		},ms)
-	})
-}
+			resolve();
+		}, ms);
+	});
+};
 
 function getRandomAmt(runtime) {
 	const min = Math.ceil((runtime*10000)*0.99);
@@ -194,7 +193,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 					error: tx.error?.code === 6001 ? "Slippage Tolerance Exceeded" : tx.error?.message || null,
 				};
 
-				var waittime = await waitabit(100);
+				await waitabit(100);
 
 				// handle TX results
 				if (tx.error) {
@@ -484,7 +483,7 @@ const run = async () => {
 			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
 
 			// Double check the wallet has sufficient amount of tokenA
-			var realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
+			await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
 
 			// set initial & last balance for tokenB
 			cache.initialBalance.tokenB = await getInitialotherAmountThreshold(
@@ -507,7 +506,7 @@ const run = async () => {
 			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
 
 			// Double check the wallet has sufficient amount of tokenA
-			var realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
+			const realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
 
 			if (realbalanceTokenA<cache.initialBalance.tokenA){
 				console.log('Balance Lookup is too low for token: '+realbalanceTokenA+' < '+cache.initialBalance.tokenA);

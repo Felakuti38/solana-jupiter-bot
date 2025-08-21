@@ -188,7 +188,7 @@ const checkArbReady = async () => {
 
 		var checkBalance = Number(0);
 		const connection = new Connection(process.env.DEFAULT_RPC);
-		wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
+		const wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
 
 		const tokenAccounts = await connection.getParsedTokenAccountsByOwner(wallet.publicKey, {
 			mint: new PublicKey(ARB_TOKEN)

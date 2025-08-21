@@ -4,9 +4,11 @@ const React = require("react");
 const importJsx = require("import-jsx");
 const { render } = require("ink");
 const meow = require("meow");
+const chalk = require("chalk");
 
 // check for .env file
 const { checkForEnvFile, checkWallet, checkArbReady } = require("./utils");
+const { logExit } = require("./bot/exit");
 checkForEnvFile();
 
 require("dotenv").config();
@@ -19,9 +21,9 @@ const isArbReady = async () => {
         await checkArbReady();
         return true; // If checkArbReady completes without errors, return true
     } catch (error) {
-        spinner.text = chalk.black.bgRedBright(
+        console.error(chalk.black.bgRedBright(
             `\n${error.message}\n`
-        );
+        ));
         logExit(1, error);
         process.exit(1); // Exit the process if there's an error
     }

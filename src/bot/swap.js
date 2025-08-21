@@ -6,13 +6,12 @@ const { checktrans } = require("../utils/transaction.js");
 const promiseRetry = require("promise-retry");
 
 const waitabit = async (ms) => {
-	const mySecondPromise = new Promise(function(resolve,reject){
-		console.log('construct a promise...')
+	return new Promise((resolve) => {
 		setTimeout(() => {
-			reject(console.log('Error in promise'));
-		},ms)
-	})
-  }
+			resolve();
+		}, ms);
+	});
+};
 
 const swap = async (jupiter, route) => {
 	try {
@@ -42,6 +41,7 @@ const swap = async (jupiter, route) => {
 		return [result, performanceOfTx];
 	} catch (error) {
 		console.log("Swap error: ", error);
+		return [{ error }, 0];
 	}
 };
 exports.swap = swap;
@@ -197,7 +197,7 @@ const successSwapHandler = async (tx, tradeEntry, tokenA, tokenB) => {
 						}
 					} else if(err2==2){
 						// Transaction failed. Kill it and retry
-						err.message = JSON.stringify(txresult);
+						const err = { message: JSON.stringify(txresult) };
 						return -1;
 					} else{
 						retry(new Error("Transaction was not posted yet. Retrying..."));
@@ -213,12 +213,12 @@ const successSwapHandler = async (tx, tradeEntry, tokenA, tokenB) => {
 
 				if (lookresult==-1){
 					//console.log('Lookup Shows Failed Transaction.');
-					outputamt = 0;
-					err.status=true;
+					let outputamt = 0;
+					const err = { status: true };
 				} else {
 					// Track the output amount
-					inputamt = txresult[tokenA.address].start;
-					outputamt = txresult[tokenA.address].end;
+					const inputamt = txresult[tokenA.address].start;
+					const outputamt = txresult[tokenA.address].end;
 
 					cache.currentProfit.tokenA = calculateProfit(
 							cache.initialBalance.tokenA,
