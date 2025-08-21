@@ -28,13 +28,16 @@ const CONFIG_INITIAL_STATE = {
 				items: [
 					// Primary RPC from environment variable
 					{
-						label: process.env.DEFAULT_RPC || "https://api.mainnet-beta.solana.com",
-						value: process.env.DEFAULT_RPC || "https://api.mainnet-beta.solana.com",
+						label:
+							process.env.DEFAULT_RPC || "https://api.mainnet-beta.solana.com",
+						value:
+							process.env.DEFAULT_RPC || "https://api.mainnet-beta.solana.com",
 						isSelected: true,
 					},
 					// Comprehensive RPC list
 					{
-						label: "Helius (Premium) - https://mainnet.helius-rpc.com/?api-key=YOUR_KEY",
+						label:
+							"Helius (Premium) - https://mainnet.helius-rpc.com/?api-key=YOUR_KEY",
 						value: "https://mainnet.helius-rpc.com/?api-key=YOUR_KEY",
 						isSelected: false,
 					},
@@ -44,12 +47,14 @@ const CONFIG_INITIAL_STATE = {
 						isSelected: false,
 					},
 					{
-						label: "Chainstack (Premium) - https://solana-mainnet.chainstacklabs.com",
+						label:
+							"Chainstack (Premium) - https://solana-mainnet.chainstacklabs.com",
 						value: "https://solana-mainnet.chainstacklabs.com",
 						isSelected: false,
 					},
 					{
-						label: "QuickNode (Premium) - https://solana-mainnet.rpc.quicknode.com",
+						label:
+							"QuickNode (Premium) - https://solana-mainnet.rpc.quicknode.com",
 						value: "https://solana-mainnet.rpc.quicknode.com",
 						isSelected: false,
 					},
@@ -69,14 +74,15 @@ const CONFIG_INITIAL_STATE = {
 						isSelected: false,
 					},
 					{
-						label: "Solana Foundation (Free) - https://api.mainnet-beta.solana.com",
+						label:
+							"Solana Foundation (Free) - https://api.mainnet-beta.solana.com",
 						value: "https://api.mainnet-beta.solana.com",
 						isSelected: false,
 					},
 					// Additional RPCs from environment variable
 					...String(process.env.ALT_RPC_LIST || "")
 						.split(",")
-						.filter(item => item.trim() !== "")
+						.filter((item) => item.trim() !== "")
 						.map((item) => ({
 							label: `Custom RPC - ${item.trim()}`,
 							value: item.trim(),
@@ -126,7 +132,7 @@ const CONFIG_INITIAL_STATE = {
 				minInterval: 100,
 				safetyLevel: "BALANCED",
 				maxRiskPerTrade: 0.02,
-				maxDailyLoss: 0.10,
+				maxDailyLoss: 0.1,
 				maxConcurrentTrades: 3,
 				cooldownPeriod: 5000,
 				ammStrategy: "OPTIMIZED", // FAST, OPTIMIZED, COMPREHENSIVE

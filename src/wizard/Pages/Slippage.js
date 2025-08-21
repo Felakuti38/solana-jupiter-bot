@@ -39,10 +39,7 @@ function Slippage() {
 	const handleSlippageStrategySelect = (slippage) => {
 		const value = slippage.value;
 		setTempSlippageStrategy(value);
-		if (value !== "custom")
-			configSetValue(
-				"slippage", Number(value)
-			);
+		if (value !== "custom") configSetValue("slippage", Number(value));
 	};
 
 	const handleCustomSlippageChange = (value) => {

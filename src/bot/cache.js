@@ -5,8 +5,8 @@ const cache = {
 	queueThrottle: 1,
 	sideBuy: true,
 	iteration: 0,
-	walletpubkey: '',
-	walletpubkeyfull: '',
+	walletpubkey: "",
+	walletpubkeyfull: "",
 	iterationPerMinute: {
 		start: performance.now(),
 		value: 0,

@@ -21,51 +21,51 @@ class Logger {
 			message,
 			timestamp,
 			correlationId: this.correlationId,
-			...meta
+			...meta,
 		};
 
 		return JSON.stringify(logEntry);
 	}
 
 	info(message, meta = {}) {
-		const formatted = this.formatMessage('info', message, meta);
+		const formatted = this.formatMessage("info", message, meta);
 		console.log(chalk.blue(`[INFO] ${formatted}`));
 	}
 
 	success(message, meta = {}) {
-		const formatted = this.formatMessage('success', message, meta);
+		const formatted = this.formatMessage("success", message, meta);
 		console.log(chalk.green(`[SUCCESS] ${formatted}`));
 	}
 
 	warn(message, meta = {}) {
-		const formatted = this.formatMessage('warn', message, meta);
+		const formatted = this.formatMessage("warn", message, meta);
 		console.warn(chalk.yellow(`[WARN] ${formatted}`));
 	}
 
 	error(message, meta = {}) {
-		const formatted = this.formatMessage('error', message, meta);
+		const formatted = this.formatMessage("error", message, meta);
 		console.error(chalk.red(`[ERROR] ${formatted}`));
 	}
 
 	debug(message, meta = {}) {
-		if (process.env.DEBUG === 'true') {
-			const formatted = this.formatMessage('debug', message, meta);
+		if (process.env.DEBUG === "true") {
+			const formatted = this.formatMessage("debug", message, meta);
 			console.log(chalk.gray(`[DEBUG] ${formatted}`));
 		}
 	}
 
 	trade(message, meta = {}) {
-		const formatted = this.formatMessage('trade', message, meta);
+		const formatted = this.formatMessage("trade", message, meta);
 		console.log(chalk.cyan(`[TRADE] ${formatted}`));
 	}
 
 	safety(message, meta = {}) {
-		const formatted = this.formatMessage('safety', message, meta);
+		const formatted = this.formatMessage("safety", message, meta);
 		console.log(chalk.magenta(`[SAFETY] ${formatted}`));
 	}
 
 	performance(message, meta = {}) {
-		const formatted = this.formatMessage('performance', message, meta);
+		const formatted = this.formatMessage("performance", message, meta);
 		console.log(chalk.cyan(`[PERF] ${formatted}`));
 	}
 

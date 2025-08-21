@@ -5,9 +5,7 @@ const { useContext } = require("react");
 const { default: SelectInput } = require("ink-select-input");
 const chalk = require("chalk");
 
-const NETWORKS = [
-	{ label: "mainnet-beta", value: "mainnet-beta" },
-];
+const NETWORKS = [{ label: "mainnet-beta", value: "mainnet-beta" }];
 
 const Indicator = ({ label, value }) => {
 	const {

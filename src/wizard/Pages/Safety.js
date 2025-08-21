@@ -25,10 +25,9 @@ const Indicator = ({ label, value }) => {
 };
 
 function Safety() {
-	const { configSetValue } = useContext(WizardContext);
+	const { configSetValue, config } = useContext(WizardContext);
 	let isMountedRef = useRef(false);
 
-	const [tempSafetyLevel, setTempSafetyLevel] = useState(SAFETY_LEVELS[1]); // Default to BALANCED
 	const [maxRiskPerTrade, setMaxRiskPerTrade] = useState("2");
 	const [maxDailyLoss, setMaxDailyLoss] = useState("10");
 	const [maxConcurrentTrades, setMaxConcurrentTrades] = useState("3");
@@ -37,11 +36,14 @@ function Safety() {
 
 	const handleSafetyLevelSelect = (safety) => {
 		const value = safety.value;
-		setTempSafetyLevel(value);
-		configSetValue("advanced", {
-			...config.advanced.value,
-			safetyLevel: value,
-		}, true);
+		configSetValue(
+			"advanced",
+			{
+				...config.advanced.value,
+				safetyLevel: value,
+			},
+			true
+		);
 	};
 
 	const handleMaxRiskPerTradeChange = (value) => {
@@ -113,7 +115,7 @@ function Safety() {
 				Configure <Text color="#cdadff">safety levels</Text> and risk management
 			</Text>
 			<Text color="gray">Higher safety = slower but safer trading</Text>
-			
+
 			<Box margin={1} flexDirection="column">
 				<Text bold>Safety Level:</Text>
 				<SelectInput
@@ -125,7 +127,7 @@ function Safety() {
 
 			<Box margin={1} flexDirection="column">
 				<Text bold>Risk Management:</Text>
-				
+
 				<Box flexDirection="row" alignItems="center" marginTop={1}>
 					<Text>Max risk per trade (%):</Text>
 					<Box
@@ -143,11 +145,7 @@ function Safety() {
 
 				<Box flexDirection="row" alignItems="center" marginTop={1}>
 					<Text>Max daily loss (%):</Text>
-					<Box
-						borderStyle="round"
-						borderColor="gray"
-						marginLeft={1}
-					>
+					<Box borderStyle="round" borderColor="gray" marginLeft={1}>
 						<TextInput
 							value={maxDailyLoss}
 							onChange={handleMaxDailyLossChange}
@@ -158,11 +156,7 @@ function Safety() {
 
 				<Box flexDirection="row" alignItems="center" marginTop={1}>
 					<Text>Max concurrent trades:</Text>
-					<Box
-						borderStyle="round"
-						borderColor="gray"
-						marginLeft={1}
-					>
+					<Box borderStyle="round" borderColor="gray" marginLeft={1}>
 						<TextInput
 							value={maxConcurrentTrades}
 							onChange={handleMaxConcurrentTradesChange}
@@ -173,11 +167,7 @@ function Safety() {
 
 				<Box flexDirection="row" alignItems="center" marginTop={1}>
 					<Text>Cooldown period (ms):</Text>
-					<Box
-						borderStyle="round"
-						borderColor="gray"
-						marginLeft={1}
-					>
+					<Box borderStyle="round" borderColor="gray" marginLeft={1}>
 						<TextInput
 							value={cooldownPeriod}
 							onChange={handleCooldownPeriodChange}
