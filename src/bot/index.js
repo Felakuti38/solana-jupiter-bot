@@ -21,6 +21,11 @@ const { setup, getInitialotherAmountThreshold, checkTokenABalance } = require(".
 const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
 
+// Import new meme coin strategies
+const { MemeCoinArbitrageStrategy } = require("../strategies/memeCoinArbitrage");
+const { MicroTradingEngine } = require("../strategies/microTradingEngine");
+const { getMemeCoinConfig } = require("../config/memeCoinConfig");
+
 const waitabit = async (ms) => {
 	return new Promise((resolve) => {
 		setTimeout(() => {
