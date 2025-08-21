@@ -1,8 +1,8 @@
 require("dotenv").config();
-const { Connection, PublicKey } = require("@solana/web3.js");
-const { setTimeout } = require("timers/promises");
+const { Connection } = require("@solana/web3.js");
+// const { setTimeout } = require("timers/promises");
 const cache = require("../bot/cache");
-const { loadConfigFile, toNumber, calculateProfit, toDecimal } = require("./index.js");
+const { loadConfigFile } = require("./index.js");
 
 cache.config = loadConfigFile({ showSpinner: true });
 
@@ -14,22 +14,22 @@ const rpc_backup = 'https://api.mainnet-beta.solana.com';
 
 // Key variables
 var transstatus = 0;
-var transid = '';
+// var transid = '';
 var transresp = [];
 
 const WAIT_ERROR_CODE = 1;
 const WAIT_SUCCESS_CODE = 0;
 
-const waitabit = async (ms) => {
-    try {
-        await setTimeout(ms);
-        console.log('Waited for', ms, 'milliseconds.');
-        return WAIT_SUCCESS_CODE;
-    } catch (error) {
-        console.error('Error occurred while waiting:', error);
-        return WAIT_ERROR_CODE;
-    }
-};
+// const waitabit = async (ms) => {
+//     try {
+//         await setTimeout(ms);
+//         console.log('Waited for', ms, 'milliseconds.');
+//         return WAIT_SUCCESS_CODE;
+//     } catch (error) {
+//         console.error('Error occurred while waiting:', error);
+//         return WAIT_ERROR_CODE;
+//     }
+// };
 
 // Main RPC
 const connection = new Connection(rpc_main, {
@@ -53,7 +53,7 @@ const fetchTransaction = async (rpcConnection, transaction) => {
     }
 };
 
-const checkTransactionStatus = async (transaction, wallet_address) => {
+const checkTransactionStatus = async (transaction, _walletAddress) => {
     try {
         const primaryTransaction = await fetchTransaction(connection, transaction);
         
@@ -70,12 +70,13 @@ const checkTransactionStatus = async (transaction, wallet_address) => {
 
 };
 
-const checktrans = async (txid,wallet_address) => {
+const checktrans = async (txid,_walletAddress) => {
     try {
-        transresp = await checkTransactionStatus(txid, wallet_address);
+        transresp = await checkTransactionStatus(txid, _walletAddress);
     
         if (transresp) {
             var transaction_changes = [];
+			var instructions, parsed, token, tokenamt, tokendec, diff; // diffdec;
 
             if (transresp.meta?.status.Err){
                 // Failed Transaction
@@ -89,8 +90,8 @@ const checktrans = async (txid,wallet_address) => {
                 return [null, WAIT_ERROR_CODE];
             }
 
-            var tokenamt=0;
-            var tokendec=0;
+            tokenamt=0;
+            tokendec=0;
 
             // Outgoing SOL native mgmt
             // Handle transfers of SOL that would not show up due to wrapping
@@ -101,7 +102,7 @@ const checktrans = async (txid,wallet_address) => {
                             //console.log(JSON.stringify(parsed, null, 4));
                             if (parsed.parsed){
                                 if (parsed.parsed.type=='transferChecked'){
-                                    if (parsed.parsed.info.authority==wallet_address && parsed.parsed.info.mint=='So11111111111111111111111111111111111111112'){
+                                    if (parsed.parsed.info.authority==_walletAddress && parsed.parsed.info.mint=='So11111111111111111111111111111111111111112'){
                                         tokenamt = Number(parsed.parsed.info.tokenAmount.amount);
                                         tokendec = parsed.parsed.info.tokenAmount.decimals;
                                     }
@@ -119,18 +120,18 @@ const checktrans = async (txid,wallet_address) => {
 
             // Pre Token Balance Handling
             for (token of transresp.meta.preTokenBalances){
-                if (token.owner==wallet_address){
+                if (token.owner==_walletAddress){
                     transaction_changes[token.mint.toString()] = {status: transstatus, start: token.uiTokenAmount.amount, decimals: token.uiTokenAmount.decimals};
                 };
             }
 
             // Post Token Handling
             for (token of transresp.meta.postTokenBalances){
-                if (token.owner==wallet_address){
+                if (token.owner==_walletAddress){
                     if (transaction_changes[token.mint]?.start) {
                         // Case where token account existed already
                         diff = Number(token.uiTokenAmount.amount)-Number(transaction_changes[token.mint].start);
-                        diffdec = toDecimal(diff,transaction_changes[token.mint].decimals);
+                        // diffdec = toDecimal(diff,transaction_changes[token.mint].decimals);
                         transaction_changes[token.mint] = {...transaction_changes[token.mint], end: token.uiTokenAmount.amount, change: diff} 
                     } else {
                         // Case where token did not exist yet
@@ -138,7 +139,7 @@ const checktrans = async (txid,wallet_address) => {
                         transaction_changes[token.mint] = {status: transstatus, start: 0, decimals: token.uiTokenAmount.decimals};
                         // Calculate the difference
                         diff = Number(token.uiTokenAmount.amount)-Number(transaction_changes[token.mint].start);
-                        diffdec = toDecimal(diff,transaction_changes[token.mint].decimals);
+                        // diffdec = toDecimal(diff,transaction_changes[token.mint].decimals);
                         transaction_changes[token.mint] = {...transaction_changes[token.mint], end: token.uiTokenAmount.amount, change: diff} 
                     }
                 }

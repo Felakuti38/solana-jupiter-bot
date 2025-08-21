@@ -25,14 +25,14 @@ const validateEnvironment = () => {
 	// Validate private key format
 	try {
 		bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY);
-	} catch (error) {
+	} catch {
 		throw new Error('Invalid SOLANA_WALLET_PRIVATE_KEY format');
 	}
 	
 	// Validate RPC URL
 	try {
 		new URL(process.env.DEFAULT_RPC);
-	} catch (error) {
+	} catch {
 		throw new Error('Invalid DEFAULT_RPC URL format');
 	}
 
@@ -106,7 +106,7 @@ const validateTokenAddress = (address) => {
 	
 	try {
 		bs58.decode(address);
-	} catch (error) {
+	} catch {
 		throw new Error('Invalid token address format');
 	}
 	

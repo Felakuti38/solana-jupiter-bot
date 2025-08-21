@@ -25,10 +25,10 @@ const Indicator = ({ label, value }) => {
 };
 
 function Safety() {
-	const { configSetValue } = useContext(WizardContext);
+	const { configSetValue, config } = useContext(WizardContext);
 	let isMountedRef = useRef(false);
 
-	const [tempSafetyLevel, setTempSafetyLevel] = useState(SAFETY_LEVELS[1]); // Default to BALANCED
+	// const [tempSafetyLevel, setTempSafetyLevel] = useState(SAFETY_LEVELS[1]); // Default to BALANCED
 	const [maxRiskPerTrade, setMaxRiskPerTrade] = useState("2");
 	const [maxDailyLoss, setMaxDailyLoss] = useState("10");
 	const [maxConcurrentTrades, setMaxConcurrentTrades] = useState("3");
@@ -37,7 +37,7 @@ function Safety() {
 
 	const handleSafetyLevelSelect = (safety) => {
 		const value = safety.value;
-		setTempSafetyLevel(value);
+		// setTempSafetyLevel(value);
 		configSetValue("advanced", {
 			...config.advanced.value,
 			safetyLevel: value,

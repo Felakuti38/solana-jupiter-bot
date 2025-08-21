@@ -3,29 +3,29 @@ const chalk = require("chalk");
 const ora = require("ora-classic");
 const bs58 = require("bs58");
 const { Jupiter } = require("@jup-ag/core");
-const { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } = require("@solana/web3.js");
+const { Connection, Keypair, PublicKey } = require("@solana/web3.js");
 
 var JSBI = (require('jsbi'));
-var invariant = (require('tiny-invariant'));
-var _Decimal = (require('decimal.js'));
-var _Big = (require('big.js'));
-var toFormat = (require('toformat'));
-var anchor = require('@project-serum/anchor');
+// var invariant = (require('tiny-invariant'));
+// var _Decimal = (require('decimal.js'));
+// var _Big = (require('big.js'));
+// var toFormat = (require('toformat'));
+// var anchor = require('@project-serum/anchor');
 
 const { logExit } = require("./exit");
 const { loadConfigFile, toDecimal, getAMMConfiguration } = require("../utils");
 const { intro, listenHotkeys } = require("./ui");
-const { setTimeout } = require("timers/promises");
+// const { setTimeout } = require("timers/promises");
 const cache = require("./cache");
 const wrapUnwrapSOL = cache.wrapUnwrapSOL;
 
 // Account balance code
 const balanceCheck = async (checkToken) => {
 	let checkBalance = Number(0);
-	let t = Number(0);
+	// let t = Number(0);
 
 	const connection = new Connection(process.env.DEFAULT_RPC);
-	wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
+	let wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
 
 	if (wrapUnwrapSOL && checkToken.address === 'So11111111111111111111111111111111111111112') {
 		// This is where Native balance is needing to be checked and not the Wrapped SOL ATA
@@ -76,6 +76,7 @@ const checkTokenABalance = async (tokenA, initialTradingBalance) => {
 	try {
 		// Check the balance of TokenA to make sure there is enough to trade with
 		var realbalanceTokenA = await balanceCheck(tokenA);
+	var bal1, bal2;
 		bal1 = toDecimal(realbalanceTokenA,tokenA.decimals);
 		bal2 = toDecimal(initialTradingBalance,tokenA.decimals);
 

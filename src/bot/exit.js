@@ -39,7 +39,7 @@ const handleExit = () => {
 					`		> Cache saved to ${chalk.bold("./temp/cache.json")} `
 				)
 			);
-		} catch (error) {
+		} catch {
 			console.log(
 				chalk.black.bgRedBright(
 					`		X Error saving cache to ${chalk.bold("./temp/cache.json")} `
@@ -58,7 +58,7 @@ const handleExit = () => {
 					`		> Trade history saved to ${chalk.bold("./temp/tradeHistory.json")} `
 				)
 			);
-		} catch (error) {
+		} catch {
 			console.log(
 				chalk.black.bgRedBright(
 					`		X Error saving trade history to ${chalk.bold(
@@ -68,8 +68,8 @@ const handleExit = () => {
 			);
 		}
 		console.log(chalk.black.bgMagentaBright.bold("	Exit Done! \n"));
-	} catch (error) {
-		console.log(error);
+	} catch (_error) {
+		console.log(_error);
 	}
 };
 

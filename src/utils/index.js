@@ -2,9 +2,9 @@ const chalk = require("chalk");
 const fs = require("fs");
 const ora = require("ora-classic");
 const { logExit } = require("../bot/exit");
-const JSBI = require('jsbi');
-const bs58 = require("bs58");
-const { PublicKey, Connection, Keypair } = require("@solana/web3.js");
+// const JSBI = require('jsbi');
+// const bs58 = require("bs58");
+const { PublicKey, Connection } = require("@solana/web3.js");
 const { TRADING_CONSTANTS } = require("./constants");
 require("dotenv").config();
 
@@ -188,7 +188,7 @@ const checkArbReady = async () => {
 };
 
 // New safety check utilities
-const { Connection, PublicKey } = require("@solana/web3.js");
+// const { Connection, PublicKey } = require("@solana/web3.js");
 const axios = require("axios");
 
 /**

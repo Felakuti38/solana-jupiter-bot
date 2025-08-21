@@ -1,18 +1,18 @@
 const { calculateProfit, toDecimal, storeItInTempAsJSON } = require("../utils");
 const cache = require("./cache");
-const { setTimeout } = require("timers/promises");
+// const { setTimeout } = require("timers/promises");
 const { balanceCheck } = require("./setup");
 const { checktrans } = require("../utils/transaction.js");
 const promiseRetry = require("promise-retry");
 
-const waitabit = async (ms) => {
-	const mySecondPromise = new Promise(function(resolve,reject){
-		console.log('construct a promise...')
-		setTimeout(() => {
-			reject(console.log('Error in promise'));
-		},ms)
-	})
-  }
+// const waitabit = async (ms) => {
+// 	const mySecondPromise = new Promise(function(resolve,reject){
+// 		console.log('construct a promise...')
+// 		setTimeout(() => {
+// 			reject(console.log('Error in promise'));
+// 		},ms)
+// 	})
+//   }
 
 const swap = async (jupiter, route) => {
 	try {
@@ -141,6 +141,7 @@ const successSwapHandler = async (tx, tradeEntry, tokenA, tokenB) => {
 			try {
 				// BETA LOOKUP FOR RESULT VIA RPC
 				var txresult = [];
+			var err, inputamt, outputamt;
 				var err2 = -1;
 				var rcount = 0;
 				var retries = 30;

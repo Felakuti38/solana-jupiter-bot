@@ -1,10 +1,8 @@
 console.clear();
 
 require("dotenv").config();
-const { clearInterval } = require("timers");
 const { PublicKey } = require("@solana/web3.js");
 const JSBI = require('jsbi');
-const { setTimeout } = require("timers/promises");
 const {
 	calculateProfit,
 	toDecimal,
@@ -21,13 +19,13 @@ const { setup, getInitialotherAmountThreshold, checkTokenABalance } = require(".
 const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
 
-const waitabit = async (ms) => {
-	return new Promise((resolve) => {
-		setTimeout(() => {
-			resolve();
-		}, ms);
-	});
-};
+// const waitabit = async (ms) => {
+// 	return new Promise((resolve) => {
+// 		setTimeout(() => {
+// 			resolve();
+// 		}, ms);
+// 	});
+// };
 
 function getRandomAmt(runtime) {
 	const min = Math.ceil((runtime*10000)*0.99);
@@ -57,7 +55,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 		// set input / output token
 		const inputToken = cache.sideBuy ? tokenA : tokenB;
 		const outputToken = cache.sideBuy ? tokenB : tokenA;
-		const tokdecimals = cache.sideBuy ? inputToken.decimals : outputToken.decimals;
+		// const tokdecimals = cache.sideBuy ? inputToken.decimals : outputToken.decimals;
 		const amountInJSBI = JSBI.BigInt(amountToTrade);
 
 		// check current routes via JUP4 SDK
@@ -96,7 +94,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 		var slippagerevised = slippage;
 
 		if ((simulatedProfit > cache.config.minPercProfit) && cache.config.adaptiveSlippage == 1){
-				var slippagerevised = (100*(simulatedProfit-cache.config.minPercProfit+(slippage/100))).toFixed(3)
+				slippagerevised = (100*(simulatedProfit-cache.config.minPercProfit+(slippage/100))).toFixed(3)
 
 				if (slippagerevised > TRADING_CONSTANTS.MAX_SLIPPAGE) {
 					// Make sure on really big numbers it is only 30% of the total
@@ -213,7 +211,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 					error: tx.error?.code === 6001 ? "Slippage Tolerance Exceeded" : tx.error?.message || null,
 				};
 
-				var waittime = await waitabit(100);
+				// var waittime = await waitabit(100);
 
 				// handle TX results
 				if (tx.error) {
@@ -499,14 +497,16 @@ const run = async () => {
 		// set everything up
         const { jupiter, tokenA, tokenB, wallet } = await setup();
 
-		// Set pubkey display
-		const walpubkeyfull = wallet.publicKey.toString();
-		console.log(`Wallet Enabled: ${walpubkeyfull}`);
-		cache.walletpubkeyfull = walpubkeyfull;
-		cache.walletpubkey = walpubkeyfull.slice(0,5) + '...' + walpubkeyfull.slice(walpubkeyfull.length-3);
-		//console.log(cache.walletpubkey);
+			// Set pubkey display
+	const walpubkeyfull = wallet.publicKey.toString();
+	console.log(`Wallet Enabled: ${walpubkeyfull}`);
+	cache.walletpubkeyfull = walpubkeyfull;
+	cache.walletpubkey = walpubkeyfull.slice(0,5) + '...' + walpubkeyfull.slice(walpubkeyfull.length-3);
+	//console.log(cache.walletpubkey);
 
-		if (cache.config.tradingStrategy === "pingpong") {
+	var realbalanceTokenA;
+
+	if (cache.config.tradingStrategy === "pingpong") {
 			// set initial & current & last balance for tokenA
 			console.log('Trade Size is:'+cache.config.tradeSize.value);
 
@@ -518,7 +518,7 @@ const run = async () => {
 			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
 
 			// Double check the wallet has sufficient amount of tokenA
-			var realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
+			realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
 
 			// set initial & last balance for tokenB
 			cache.initialBalance.tokenB = await getInitialotherAmountThreshold(
@@ -541,7 +541,7 @@ const run = async () => {
 			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
 
 			// Double check the wallet has sufficient amount of tokenA
-			var realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
+			realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
 
 			if (realbalanceTokenA<cache.initialBalance.tokenA){
 				console.log('Balance Lookup is too low for token: '+realbalanceTokenA+' < '+cache.initialBalance.tokenA);
