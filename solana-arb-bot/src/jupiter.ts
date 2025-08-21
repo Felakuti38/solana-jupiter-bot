@@ -7,6 +7,7 @@ export type Quote = {
   routes: any[];
   dexes: string[];
   contextSlot?: number;
+  raw: any;
 };
 
 export async function getQuote(
@@ -38,6 +39,7 @@ export async function getQuote(
     routes: route.routePlan,
     dexes: route.routePlan.map((r: any) => r.swapInfo.label),
     contextSlot: data.contextSlot,
+    raw: route,
   };
 }
 
