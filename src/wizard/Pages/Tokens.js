@@ -87,9 +87,21 @@ function Tokens() {
 
 	useEffect(() => {
 		// check if tokens.json exist
-		if (fs.existsSync("./tokens.json")) {
-			const tokensFromFile = JSON.parse(fs.readFileSync("./config.json"));
-			tokens.tokensFromFile?.length > 0 && setTokens(tokensFromFile);
+		if (fs.existsSync("./temp/tokens.json")) {
+			try {
+				const tokensFromFile = JSON.parse(fs.readFileSync("./temp/tokens.json"));
+				tokensFromFile?.length > 0 && setTokens(tokensFromFile);
+			} catch (err) {
+				// fallback to fetch
+				axios.get(TOKEN_LIST_URL[network]).then((res) => {
+					isMountedRef.current && setTokens(res.data);
+					// save tokens to tokens.json file
+					fs.writeFileSync(
+						"./temp/tokens.json",
+						JSON.stringify(res.data, null, 2)
+					);
+				});
+			}
 		} else {
 			axios.get(TOKEN_LIST_URL[network]).then((res) => {
 				isMountedRef.current && setTokens(res.data);

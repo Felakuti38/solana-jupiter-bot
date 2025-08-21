@@ -25,7 +25,7 @@ const Indicator = ({ label, value }) => {
 };
 
 function Safety() {
-	const { configSetValue } = useContext(WizardContext);
+	const { config, configSetValue } = useContext(WizardContext);
 	let isMountedRef = useRef(false);
 
 	const [tempSafetyLevel, setTempSafetyLevel] = useState(SAFETY_LEVELS[1]); // Default to BALANCED
@@ -39,8 +39,14 @@ function Safety() {
 		const value = safety.value;
 		setTempSafetyLevel(value);
 		configSetValue("advanced", {
-			...config.advanced.value,
-			safetyLevel: value,
+			value: {
+				...config.advanced.value,
+				safetyLevel: value,
+			},
+			isSet: {
+				...config.advanced.isSet,
+				safetyLevel: true,
+			}
 		}, true);
 	};
 
@@ -57,8 +63,14 @@ function Safety() {
 	const handleMaxRiskPerTradeSubmit = () => {
 		const value = Number(maxRiskPerTrade) / 100; // Convert percentage to decimal
 		configSetValue("advanced", {
-			...config.advanced.value,
-			maxRiskPerTrade: value,
+			value: {
+				...config.advanced.value,
+				maxRiskPerTrade: value,
+			},
+			isSet: {
+				...config.advanced.isSet,
+				maxRiskPerTrade: true,
+			}
 		});
 	};
 
@@ -71,8 +83,14 @@ function Safety() {
 	const handleMaxDailyLossSubmit = () => {
 		const value = Number(maxDailyLoss) / 100; // Convert percentage to decimal
 		configSetValue("advanced", {
-			...config.advanced.value,
-			maxDailyLoss: value,
+			value: {
+				...config.advanced.value,
+				maxDailyLoss: value,
+			},
+			isSet: {
+				...config.advanced.isSet,
+				maxDailyLoss: true,
+			}
 		});
 	};
 
@@ -84,8 +102,14 @@ function Safety() {
 
 	const handleMaxConcurrentTradesSubmit = () => {
 		configSetValue("advanced", {
-			...config.advanced.value,
-			maxConcurrentTrades: Number(maxConcurrentTrades),
+			value: {
+				...config.advanced.value,
+				maxConcurrentTrades: Number(maxConcurrentTrades),
+			},
+			isSet: {
+				...config.advanced.isSet,
+				maxConcurrentTrades: true,
+			}
 		});
 	};
 
@@ -97,8 +121,14 @@ function Safety() {
 
 	const handleCooldownPeriodSubmit = () => {
 		configSetValue("advanced", {
-			...config.advanced.value,
-			cooldownPeriod: Number(cooldownPeriod),
+			value: {
+				...config.advanced.value,
+				cooldownPeriod: Number(cooldownPeriod),
+			},
+			isSet: {
+				...config.advanced.isSet,
+				cooldownPeriod: true,
+			}
 		});
 	};
 

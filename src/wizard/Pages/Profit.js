@@ -18,7 +18,8 @@ function MinProfit() {
 	const [inputBorderColor, setInputBorderColor] = useState("gray");
 
 	const handleMinProfitSubmit = (value) => {
-		configSetValue("profit", value);
+		const num = Number(value);
+		configSetValue("profit", isNaN(num) ? 0 : num);
 	};
 
 	const handleMinProfitChange = (value) => {

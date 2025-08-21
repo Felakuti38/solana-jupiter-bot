@@ -4,7 +4,7 @@ require("dotenv").config();
 const { clearInterval } = require("timers");
 const { PublicKey } = require("@solana/web3.js");
 const JSBI = require('jsbi');
-const { setTimeout } = require("timers/promises");
+const { setTimeout: sleep } = require("timers/promises");
 const {
 	calculateProfit,
 	toDecimal,
@@ -22,11 +22,7 @@ const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
 
 const waitabit = async (ms) => {
-	return new Promise((resolve) => {
-		setTimeout(() => {
-			resolve();
-		}, ms);
-	});
+	return sleep(ms);
 };
 
 function getRandomAmt(runtime) {

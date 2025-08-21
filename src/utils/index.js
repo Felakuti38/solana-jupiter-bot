@@ -188,7 +188,6 @@ const checkArbReady = async () => {
 };
 
 // New safety check utilities
-const { Connection, PublicKey } = require("@solana/web3.js");
 const axios = require("axios");
 
 /**
