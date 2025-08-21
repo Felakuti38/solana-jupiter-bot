@@ -13,7 +13,7 @@ var toFormat = (require('toformat'));
 var anchor = require('@project-serum/anchor');
 
 const { logExit } = require("./exit");
-const { loadConfigFile, toDecimal } = require("../utils");
+const { loadConfigFile, toDecimal, getAMMConfiguration } = require("../utils");
 const { intro, listenHotkeys } = require("./ui");
 const { setTimeout } = require("timers/promises");
 const cache = require("./cache");
@@ -103,6 +103,12 @@ const setup = async () => {
 
 		// load config file and store it in cache
 		cache.config = loadConfigFile({ showSpinner: false });
+		
+		// Get AMM configuration based on strategy
+		const ammStrategy = cache.config.advanced?.ammStrategy || 'OPTIMIZED';
+		const ammConfig = getAMMConfiguration(ammStrategy);
+		console.log(`🎯 AMM Strategy: ${ammStrategy} - ${ammConfig.description}`);
+		console.log(`📊 Enabled AMMs: ${ammConfig.enabled.length} DEXes`);
 
 		spinner = ora({
 			text: "Loading tokens...",
@@ -162,39 +168,45 @@ const setup = async () => {
 			shouldLoadSerumOpenOrders: false,
 			wrapUnwrapSOL: cache.wrapUnwrapSOL,
 			ammsToExclude: {
-				'Aldrin': false,
-				'Crema': false,
-				'Cropper': true,
-				'Cykura': true,
-				'DeltaFi': false,
-				'GooseFX': true,
-				'Invariant': false,
-				'Lifinity': false,
-				'Lifinity V2': false,
-				'Marinade': false,
-				'Mercurial': false,
-				'Meteora': false,
-				'Raydium': false,
-				'Raydium CLMM': false,
-				'Saber': false,
-				'Serum': true,
-				'Orca': false,
-				'Step': false, 
-				'Penguin': false,
-				'Saros': false,
-				'Stepn': true,
-				'Orca (Whirlpools)': false,   
-				'Sencha': false,
-				'Saber (Decimals)': false,
-				'Dradex': true,
-				'Balansol': true,
-				'Openbook': false,
-				'Marco Polo': false,
-				'Oasis': false,
-				'BonkSwap': false,
-				'Phoenix': false,
-				'Symmetry': true,
-				'Unknown': true			
+				// HIGH LIQUIDITY - KEEP ENABLED (Fast, Profitable)
+				'Raydium': false,           // ✅ Major DEX, high liquidity
+				'Raydium CLMM': false,      // ✅ Concentrated liquidity
+				'Orca': false,              // ✅ User-friendly, good liquidity
+				'Orca (Whirlpools)': false, // ✅ Concentrated liquidity
+				'Openbook': false,          // ✅ Order book, deep liquidity
+				'Phoenix': false,           // ✅ Order book, good liquidity
+				
+				// MEDIUM LIQUIDITY - KEEP ENABLED (Balanced)
+				'Meteora': false,           // ✅ Concentrated liquidity
+				'Lifinity': false,          // ✅ Good for stable pairs
+				'Lifinity V2': false,       // ✅ Updated version
+				'Saber': false,             // ✅ Stable asset specialist
+				'Mercurial': false,         // ✅ Stable asset AMM
+				
+				// SLOWER/LESS PROFITABLE - DISABLE
+				'Aldrin': true,             // ❌ Slower execution
+				'Crema': true,              // ❌ Lower liquidity
+				'DeltaFi': true,            // ❌ Less profitable
+				'Invariant': true,          // ❌ Slower route finding
+				'Marinade': true,           // ❌ Staking focused, not trading
+				'Penguin': true,            // ❌ Lower volume
+				'Saros': true,              // ❌ Less liquid
+				'Sencha': true,             // ❌ Slower execution
+				'Saber (Decimals)': true,   // ❌ Redundant with main Saber
+				'Marco Polo': true,         // ❌ Lower liquidity
+				'Oasis': true,              // ❌ Less profitable
+				'BonkSwap': true,           // ❌ Meme-focused, volatile
+				
+				// RISKY/EXCLUDED - KEEP DISABLED
+				'Cropper': true,            // ❌ Potentially risky
+				'Cykura': true,             // ❌ Potentially risky
+				'GooseFX': true,            // ❌ Potentially risky
+				'Serum': true,              // ❌ Order book, not AMM
+				'Stepn': true,              // ❌ Potentially risky
+				'Dradex': true,             // ❌ Potentially risky
+				'Balansol': true,           // ❌ Potentially risky
+				'Symmetry': true,           // ❌ Potentially risky
+				'Unknown': true,            // ❌ Unknown protocols
 			}
 		});
 		cache.isSetupDone = true;

@@ -337,6 +337,40 @@ const calculatePositionSize = (balance, riskScore, maxRiskPerTrade = 0.02) => {
 };
 
 /**
+ * Get AMM configuration based on strategy
+ */
+const getAMMConfiguration = (strategy = 'OPTIMIZED') => {
+	const ammConfigs = {
+		FAST: {
+			// Only the fastest, most liquid AMMs
+			enabled: ['Raydium', 'Raydium CLMM', 'Orca', 'Openbook'],
+			description: 'Fastest execution, major DEXes only'
+		},
+		OPTIMIZED: {
+			// Balanced approach - good liquidity + speed
+			enabled: [
+				'Raydium', 'Raydium CLMM', 'Orca', 'Orca (Whirlpools)', 
+				'Openbook', 'Phoenix', 'Meteora', 'Lifinity', 'Lifinity V2',
+				'Saber', 'Mercurial'
+			],
+			description: 'Balanced speed and liquidity'
+		},
+		COMPREHENSIVE: {
+			// All AMMs except risky ones
+			enabled: [
+				'Raydium', 'Raydium CLMM', 'Orca', 'Orca (Whirlpools)',
+				'Openbook', 'Phoenix', 'Meteora', 'Lifinity', 'Lifinity V2',
+				'Saber', 'Mercurial', 'Aldrin', 'Crema', 'DeltaFi', 'Invariant',
+				'Penguin', 'Saros', 'Sencha', 'Marco Polo', 'Oasis', 'BonkSwap'
+			],
+			description: 'Maximum coverage, slower execution'
+		}
+	};
+	
+	return ammConfigs[strategy] || ammConfigs.OPTIMIZED;
+};
+
+/**
  * Comprehensive pre-trade safety check
  */
 const preTradeSafetyCheck = async (jupiter, route, token, balance, safetyLevel = 'BALANCED') => {
@@ -498,4 +532,6 @@ module.exports = {
 	simulateTransaction,
 	calculatePositionSize,
 	preTradeSafetyCheck,
+	// AMM configuration
+	getAMMConfiguration,
 };

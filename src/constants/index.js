@@ -85,6 +85,7 @@ const CONFIG_INITIAL_STATE = {
 				maxDailyLoss: 0.10,
 				maxConcurrentTrades: 3,
 				cooldownPeriod: 5000,
+				ammStrategy: "OPTIMIZED", // FAST, OPTIMIZED, COMPREHENSIVE
 			},
 			isSet: {
 				minInterval: false,
@@ -93,6 +94,7 @@ const CONFIG_INITIAL_STATE = {
 				maxDailyLoss: false,
 				maxConcurrentTrades: false,
 				cooldownPeriod: false,
+				ammStrategy: false,
 			},
 		},
 	},
