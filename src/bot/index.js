@@ -3,7 +3,7 @@ console.clear();
 require("dotenv").config();
 const { clearInterval } = require("timers");
 const { PublicKey } = require("@solana/web3.js");
-const JSBI = require('jsbi');
+const JSBI = require("jsbi");
 const { setTimeout } = require("timers/promises");
 const {
 	calculateProfit,
@@ -17,7 +17,11 @@ const { TRADING_CONSTANTS } = require("../utils/constants");
 const { handleExit, logExit } = require("./exit");
 const cache = require("./cache");
 global.cache = cache; // Make cache globally accessible for safety checks
-const { setup, getInitialotherAmountThreshold, checkTokenABalance } = require("./setup");
+const {
+	setup,
+	getInitialotherAmountThreshold,
+	checkTokenABalance,
+} = require("./setup");
 const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
 
@@ -30,9 +34,9 @@ const waitabit = async (ms) => {
 };
 
 function getRandomAmt(runtime) {
-	const min = Math.ceil((runtime*10000)*0.99);
-	const max = Math.floor((runtime*10000)*1.01);
-	return ((Math.floor(Math.random() * (max - min + 1)) + min)/10000);
+	const min = Math.ceil(runtime * 10000 * 0.99);
+	const max = Math.floor(runtime * 10000 * 1.01);
+	return (Math.floor(Math.random() * (max - min + 1)) + min) / 10000;
 }
 
 const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
@@ -52,12 +56,15 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 				: cache.initialBalance[cache.sideBuy ? "tokenA" : "tokenB"];
 
 		const baseAmount = cache.lastBalance[cache.sideBuy ? "tokenB" : "tokenA"];
-		const slippage = typeof cache.config.slippage === "number" ? cache.config.slippage : 1; // 1BPS is 0.01%
+		const slippage =
+			typeof cache.config.slippage === "number" ? cache.config.slippage : 1; // 1BPS is 0.01%
 
 		// set input / output token
 		const inputToken = cache.sideBuy ? tokenA : tokenB;
 		const outputToken = cache.sideBuy ? tokenB : tokenA;
-		const tokdecimals = cache.sideBuy ? inputToken.decimals : outputToken.decimals;
+		const tokdecimals = cache.sideBuy
+			? inputToken.decimals
+			: outputToken.decimals;
 		const amountInJSBI = JSBI.BigInt(amountToTrade);
 
 		// check current routes via JUP4 SDK
@@ -81,13 +88,17 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 		// update status as OK
 		cache.queue[i] = 0;
 
-		const performanceOfRouteComp = performance.now() - performanceOfRouteCompStart;
+		const performanceOfRouteComp =
+			performance.now() - performanceOfRouteCompStart;
 
 		// choose first route
 		const route = await routes.routesInfos[0];
 
 		// calculate profitability
-		const simulatedProfit = calculateProfit(String(baseAmount), await JSBI.toNumber(route.outAmount));
+		const simulatedProfit = calculateProfit(
+			String(baseAmount),
+			await JSBI.toNumber(route.outAmount)
+		);
 
 		// Alter slippage to be larger based on the profit if enabled in the config
 		// set cache.config.adaptiveSlippage=1 to enable
@@ -95,18 +106,28 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 		// default to the set slippage
 		var slippagerevised = slippage;
 
-		if ((simulatedProfit > cache.config.minPercProfit) && cache.config.adaptiveSlippage == 1){
-				var slippagerevised = (100*(simulatedProfit-cache.config.minPercProfit+(slippage/100))).toFixed(3)
+		if (
+			simulatedProfit > cache.config.minPercProfit &&
+			cache.config.adaptiveSlippage == 1
+		) {
+			slippagerevised = (
+				100 *
+				(simulatedProfit - cache.config.minPercProfit + slippage / 100)
+			).toFixed(3);
 
-				if (slippagerevised > TRADING_CONSTANTS.MAX_SLIPPAGE) {
-					// Make sure on really big numbers it is only 30% of the total
-					slippagerevised = (TRADING_CONSTANTS.SLIPPAGE_MULTIPLIER * slippagerevised).toFixed(3);
-				} else {
-					slippagerevised = (TRADING_CONSTANTS.SLIPPAGE_REDUCTION_FACTOR * slippagerevised).toFixed(3);
-				}
+			if (slippagerevised > TRADING_CONSTANTS.MAX_SLIPPAGE) {
+				// Make sure on really big numbers it is only 30% of the total
+				slippagerevised = (
+					TRADING_CONSTANTS.SLIPPAGE_MULTIPLIER * slippagerevised
+				).toFixed(3);
+			} else {
+				slippagerevised = (
+					TRADING_CONSTANTS.SLIPPAGE_REDUCTION_FACTOR * slippagerevised
+				).toFixed(3);
+			}
 
-				//console.log("Setting slippage to "+slippagerevised);
-				route.slippageBps = slippagerevised;
+			//console.log("Setting slippage to "+slippagerevised);
+			route.slippageBps = slippagerevised;
 		}
 
 		// store max profit spotted
@@ -134,7 +155,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 			route,
 			inputToken,
 			amountToTrade,
-			cache.config.advanced?.safetyLevel || 'BALANCED'
+			cache.config.advanced?.safetyLevel || "BALANCED"
 		);
 
 		// Log safety check results
@@ -210,7 +231,10 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 					outAmount: tx.outputAmount || 0,
 					profit,
 					performanceOfTx,
-					error: tx.error?.code === 6001 ? "Slippage Tolerance Exceeded" : tx.error?.message || null,
+					error:
+						tx.error?.code === 6001
+							? "Slippage Tolerance Exceeded"
+							: tx.error?.message || null,
 				};
 
 				var waittime = await waitabit(100);
@@ -218,8 +242,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 				// handle TX results
 				if (tx.error) {
 					await failedSwapHandler(tradeEntry, inputToken, amountToTrade);
-				}
-				else {
+				} else {
 					if (cache.hotkeys.r) {
 						console.log("[R] - REVERT BACK SWAP - SUCCESS!");
 						cache.tradingEnabled = false;
@@ -250,7 +273,6 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 			route,
 			simulatedProfit,
 		});
-
 	} catch (error) {
 		cache.queue[i] = 1;
 		console.log(error);
@@ -260,14 +282,13 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 };
 
 const arbitrageStrategy = async (jupiter, tokenA) => {
-
 	//console.log('ARBITRAGE STRATEGY ACTIVE');
 
 	cache.iteration++;
 	const date = new Date();
 	const i = cache.iteration;
 	cache.queue[i] = -1;
-	swapactionrun: try {
+	try {
 		// calculate & update iterations per minute
 		updateIterationsPerMin(cache);
 
@@ -278,12 +299,13 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 				: cache.initialBalance["tokenA"];
 		const baseAmount = amountToTrade;
 
-        //BNI AMT to TRADE
-        const amountInJSBI = JSBI.BigInt(amountToTrade);
-        //console.log('Amount to trade:'+amountToTrade);
+		//BNI AMT to TRADE
+		const amountInJSBI = JSBI.BigInt(amountToTrade);
+		//console.log('Amount to trade:'+amountToTrade);
 
 		// default slippage
-		const slippage = typeof cache.config.slippage === "number" ? cache.config.slippage : 1; // 100 is 0.1%
+		const slippage =
+			typeof cache.config.slippage === "number" ? cache.config.slippage : 1; // 100 is 0.1%
 
 		// set input / output token
 		const inputToken = tokenA;
@@ -298,10 +320,10 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			slippageBps: slippage,
 			feeBps: 0,
 			forceFetch: true,
-		    onlyDirectRoutes: false,
-            filterTopNResult: 2,
+			onlyDirectRoutes: false,
+			filterTopNResult: 2,
 			enforceSingleTx: false,
-			swapMode: 'ExactIn',
+			swapMode: "ExactIn",
 		});
 
 		//console.log('Routes Lookup Run for '+ inputToken.address);
@@ -314,30 +336,40 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 		// update status as OK
 		cache.queue[i] = 0;
 
-		const performanceOfRouteComp = performance.now() - performanceOfRouteCompStart;
+		const performanceOfRouteComp =
+			performance.now() - performanceOfRouteCompStart;
 
 		// choose first route
 		const route = await routes.routesInfos[0];
 
 		// calculate profitability
-		const simulatedProfit = calculateProfit(baseAmount, await JSBI.toNumber(route.outAmount));
+		const simulatedProfit = calculateProfit(
+			baseAmount,
+			await JSBI.toNumber(route.outAmount)
+		);
 		const minPercProfitRnd = getRandomAmt(cache.config.minPercProfit);
 		//console.log('mpp:'+minPercProfitRnd);
 
 		var slippagerevised = slippage;
 
-		if ((simulatedProfit > cache.config.minPercProfit) && cache.config.adaptiveSlippage === 1){
-				slippagerevised = (100*(simulatedProfit-minPercProfitRnd+(slippage/100))).toFixed(3)
+		if (
+			simulatedProfit > cache.config.minPercProfit &&
+			cache.config.adaptiveSlippage === 1
+		) {
+			slippagerevised = (
+				100 *
+				(simulatedProfit - minPercProfitRnd + slippage / 100)
+			).toFixed(3);
 
-				// Set adaptive slippage
-				if (slippagerevised>500) {
-						// Make sure on really big numbers it is only 30% of the total if > 50%
-						slippagerevised = (0.30*slippagerevised).toFixed(3);
-				} else {
-						slippagerevised = (0.80*slippagerevised).toFixed(3);
-				}
-				//console.log("Setting slippage to "+slippagerevised);
-				route.slippageBps = slippagerevised;
+			// Set adaptive slippage
+			if (slippagerevised > 500) {
+				// Make sure on really big numbers it is only 30% of the total if > 50%
+				slippagerevised = (0.3 * slippagerevised).toFixed(3);
+			} else {
+				slippagerevised = (0.8 * slippagerevised).toFixed(3);
+			}
+			//console.log("Setting slippage to "+slippagerevised);
+			route.slippageBps = slippagerevised;
 		}
 
 		// store max profit spotted
@@ -363,7 +395,7 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			route,
 			inputToken,
 			amountToTrade,
-			cache.config.advanced?.safetyLevel || 'BALANCED'
+			cache.config.advanced?.safetyLevel || "BALANCED"
 		);
 
 		// Log safety check results
@@ -396,7 +428,7 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			if (cache.tradingEnabled || cache.hotkeys.r) {
 				cache.swappingRightNow = true;
 				// store trade to the history
-				console.log('swappingRightNow');
+				console.log("swappingRightNow");
 				let tradeEntry = {
 					date: date.toLocaleString(),
 					buy: cache.sideBuy,
@@ -437,7 +469,10 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 					outAmount: tx.outputAmount || 0,
 					profit,
 					performanceOfTx,
-					error: tx.error?.code === 6001 ? "Slippage Tolerance Exceeded" : tx.error?.message || null,
+					error:
+						tx.error?.code === 6001
+							? "Slippage Tolerance Exceeded"
+							: tx.error?.message || null,
 					slippage: slippagerevised,
 				};
 
@@ -497,18 +532,21 @@ const watcher = async (jupiter, tokenA, tokenB) => {
 const run = async () => {
 	try {
 		// set everything up
-        const { jupiter, tokenA, tokenB, wallet } = await setup();
+		const { jupiter, tokenA, tokenB, wallet } = await setup();
 
 		// Set pubkey display
 		const walpubkeyfull = wallet.publicKey.toString();
 		console.log(`Wallet Enabled: ${walpubkeyfull}`);
 		cache.walletpubkeyfull = walpubkeyfull;
-		cache.walletpubkey = walpubkeyfull.slice(0,5) + '...' + walpubkeyfull.slice(walpubkeyfull.length-3);
+		cache.walletpubkey =
+			walpubkeyfull.slice(0, 5) +
+			"..." +
+			walpubkeyfull.slice(walpubkeyfull.length - 3);
 		//console.log(cache.walletpubkey);
 
 		if (cache.config.tradingStrategy === "pingpong") {
 			// set initial & current & last balance for tokenA
-			console.log('Trade Size is:'+cache.config.tradeSize.value);
+			console.log("Trade Size is:" + cache.config.tradeSize.value);
 
 			cache.initialBalance.tokenA = toNumber(
 				cache.config.tradeSize.value,
@@ -518,7 +556,10 @@ const run = async () => {
 			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
 
 			// Double check the wallet has sufficient amount of tokenA
-			var realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
+			var realbalanceTokenA = await checkTokenABalance(
+				tokenA,
+				cache.initialBalance.tokenA
+			);
 
 			// set initial & last balance for tokenB
 			cache.initialBalance.tokenB = await getInitialotherAmountThreshold(
@@ -541,10 +582,18 @@ const run = async () => {
 			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
 
 			// Double check the wallet has sufficient amount of tokenA
-			var realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
+			realbalanceTokenA = await checkTokenABalance(
+				tokenA,
+				cache.initialBalance.tokenA
+			);
 
-			if (realbalanceTokenA<cache.initialBalance.tokenA){
-				console.log('Balance Lookup is too low for token: '+realbalanceTokenA+' < '+cache.initialBalance.tokenA);
+			if (realbalanceTokenA < cache.initialBalance.tokenA) {
+				console.log(
+					"Balance Lookup is too low for token: " +
+						realbalanceTokenA +
+						" < " +
+						cache.initialBalance.tokenA
+				);
 				process.exit();
 			}
 		}

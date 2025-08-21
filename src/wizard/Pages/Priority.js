@@ -39,10 +39,7 @@ function priority() {
 	const handlepriorityStrategySelect = (priority) => {
 		const value = priority.value;
 		setTemppriorityStrategy(value);
-		if (value !== "custom")
-			configSetValue(
-				"priority", Number(value)
-			);
+		if (value !== "custom") configSetValue("priority", Number(value));
 	};
 
 	const handleCustompriorityChange = (value) => {

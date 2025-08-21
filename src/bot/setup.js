@@ -3,14 +3,19 @@ const chalk = require("chalk");
 const ora = require("ora-classic");
 const bs58 = require("bs58");
 const { Jupiter } = require("@jup-ag/core");
-const { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } = require("@solana/web3.js");
+const {
+	Connection,
+	Keypair,
+	PublicKey,
+	LAMPORTS_PER_SOL,
+} = require("@solana/web3.js");
 
-var JSBI = (require('jsbi'));
-var invariant = (require('tiny-invariant'));
-var _Decimal = (require('decimal.js'));
-var _Big = (require('big.js'));
-var toFormat = (require('toformat'));
-var anchor = require('@project-serum/anchor');
+var JSBI = require("jsbi");
+var invariant = require("tiny-invariant");
+var _Decimal = require("decimal.js");
+var _Big = require("big.js");
+var toFormat = require("toformat");
+var anchor = require("@project-serum/anchor");
 
 const { logExit } = require("./exit");
 const { loadConfigFile, toDecimal, getAMMConfiguration } = require("../utils");
@@ -25,49 +30,58 @@ const balanceCheck = async (checkToken) => {
 	let t = Number(0);
 
 	const connection = new Connection(process.env.DEFAULT_RPC);
-	wallet = Keypair.fromSecretKey(bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY));
+	const wallet = Keypair.fromSecretKey(
+		bs58.decode(process.env.SOLANA_WALLET_PRIVATE_KEY)
+	);
 
-	if (wrapUnwrapSOL && checkToken.address === 'So11111111111111111111111111111111111111112') {
+	if (
+		wrapUnwrapSOL &&
+		checkToken.address === "So11111111111111111111111111111111111111112"
+	) {
 		// This is where Native balance is needing to be checked and not the Wrapped SOL ATA
 		try {
 			const balance = await connection.getBalance(wallet.publicKey);
 			checkBalance = Number(balance);
 		} catch (error) {
-			console.error('Error fetching native SOL balance:', error);
+			console.error("Error fetching native SOL balance:", error);
 		}
 	} else {
 		// Normal token so look up the ATA balance(s)
 		try {
 			let totalTokenBalance = BigInt(0);
-			const tokenAccounts = await connection.getParsedTokenAccountsByOwner(wallet.publicKey, {
-				mint: new PublicKey(checkToken.address)
-			});
-		
+			const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+				wallet.publicKey,
+				{
+					mint: new PublicKey(checkToken.address),
+				}
+			);
+
 			tokenAccounts.value.forEach((accountInfo) => {
 				const parsedInfo = accountInfo.account.data.parsed.info;
 				totalTokenBalance += BigInt(parsedInfo.tokenAmount.amount);
 			});
-		
+
 			// Convert totalTokenBalance to a regular number
 			checkBalance = Number(totalTokenBalance);
-	
 		} catch (error) {
-			console.error('Error fetching token balance:', error);
+			console.error("Error fetching token balance:", error);
 		}
 	}
 
 	try {
 		// Pass back the BN version to match
-		let checkBalanceUi = toDecimal(checkBalance,checkToken.decimals);
-		console.log(`Wallet balance for ${checkToken.symbol} is ${checkBalanceUi} (${checkBalance})`);
+		let checkBalanceUi = toDecimal(checkBalance, checkToken.decimals);
+		console.log(
+			`Wallet balance for ${checkToken.symbol} is ${checkBalanceUi} (${checkBalance})`
+		);
 	} catch (error) {
-		console.error('Silence is golden.. Or not...:', error);
+		console.error("Silence is golden.. Or not...:", error);
 	}
 
-	if (checkBalance>Number(0)){
-			return checkBalance;
+	if (checkBalance > Number(0)) {
+		return checkBalance;
 	} else {
-			return(Number(0));
+		return Number(0);
 	}
 };
 
@@ -76,8 +90,8 @@ const checkTokenABalance = async (tokenA, initialTradingBalance) => {
 	try {
 		// Check the balance of TokenA to make sure there is enough to trade with
 		var realbalanceTokenA = await balanceCheck(tokenA);
-		bal1 = toDecimal(realbalanceTokenA,tokenA.decimals);
-		bal2 = toDecimal(initialTradingBalance,tokenA.decimals);
+		const bal1 = toDecimal(realbalanceTokenA, tokenA.decimals);
+		const bal2 = toDecimal(initialTradingBalance, tokenA.decimals);
 
 		if (realbalanceTokenA < initialTradingBalance) {
 			throw new Error(`\x1b[93mThere is insufficient balance in your wallet of ${tokenA.symbol}\x1b[0m
@@ -88,11 +102,13 @@ const checkTokenABalance = async (tokenA, initialTradingBalance) => {
 		return realbalanceTokenA;
 	} catch (error) {
 		// Handle errors gracefully
-		console.error(`\n====================\n\n${error.message}\n====================\n`);
+		console.error(
+			`\n====================\n\n${error.message}\n====================\n`
+		);
 		// Return an appropriate error code or rethrow the error if necessary
 		process.exit(1); // Exiting with a non-zero code to indicate failure
 	}
-}
+};
 
 const setup = async () => {
 	let spinner, tokens, tokenA, tokenB, wallet;
@@ -103,9 +119,9 @@ const setup = async () => {
 
 		// load config file and store it in cache
 		cache.config = loadConfigFile({ showSpinner: false });
-		
+
 		// Get AMM configuration based on strategy
-		const ammStrategy = cache.config.advanced?.ammStrategy || 'OPTIMIZED';
+		const ammStrategy = cache.config.advanced?.ammStrategy || "OPTIMIZED";
 		const ammConfig = getAMMConfiguration(ammStrategy);
 		console.log(`🎯 AMM Strategy: ${ammStrategy} - ${ammConfig.description}`);
 		console.log(`📊 Enabled AMMs: ${ammConfig.enabled.length} DEXes`);
@@ -169,48 +185,50 @@ const setup = async () => {
 			wrapUnwrapSOL: cache.wrapUnwrapSOL,
 			ammsToExclude: {
 				// HIGH LIQUIDITY - KEEP ENABLED (Fast, Profitable)
-				'Raydium': false,           // ✅ Major DEX, high liquidity
-				'Raydium CLMM': false,      // ✅ Concentrated liquidity
-				'Orca': false,              // ✅ User-friendly, good liquidity
-				'Orca (Whirlpools)': false, // ✅ Concentrated liquidity
-				'Openbook': false,          // ✅ Order book, deep liquidity
-				'Phoenix': false,           // ✅ Order book, good liquidity
-				
+				Raydium: false, // ✅ Major DEX, high liquidity
+				"Raydium CLMM": false, // ✅ Concentrated liquidity
+				Orca: false, // ✅ User-friendly, good liquidity
+				"Orca (Whirlpools)": false, // ✅ Concentrated liquidity
+				Openbook: false, // ✅ Order book, deep liquidity
+				Phoenix: false, // ✅ Order book, good liquidity
+
 				// MEDIUM LIQUIDITY - KEEP ENABLED (Balanced)
-				'Meteora': false,           // ✅ Concentrated liquidity
-				'Lifinity': false,          // ✅ Good for stable pairs
-				'Lifinity V2': false,       // ✅ Updated version
-				'Saber': false,             // ✅ Stable asset specialist
-				'Mercurial': false,         // ✅ Stable asset AMM
-				
+				Meteora: false, // ✅ Concentrated liquidity
+				Lifinity: false, // ✅ Good for stable pairs
+				"Lifinity V2": false, // ✅ Updated version
+				Saber: false, // ✅ Stable asset specialist
+				Mercurial: false, // ✅ Stable asset AMM
+
 				// SLOWER/LESS PROFITABLE - DISABLE
-				'Aldrin': true,             // ❌ Slower execution
-				'Crema': true,              // ❌ Lower liquidity
-				'DeltaFi': true,            // ❌ Less profitable
-				'Invariant': true,          // ❌ Slower route finding
-				'Marinade': true,           // ❌ Staking focused, not trading
-				'Penguin': true,            // ❌ Lower volume
-				'Saros': true,              // ❌ Less liquid
-				'Sencha': true,             // ❌ Slower execution
-				'Saber (Decimals)': true,   // ❌ Redundant with main Saber
-				'Marco Polo': true,         // ❌ Lower liquidity
-				'Oasis': true,              // ❌ Less profitable
-				'BonkSwap': true,           // ❌ Meme-focused, volatile
-				
+				Aldrin: true, // ❌ Slower execution
+				Crema: true, // ❌ Lower liquidity
+				DeltaFi: true, // ❌ Less profitable
+				Invariant: true, // ❌ Slower route finding
+				Marinade: true, // ❌ Staking focused, not trading
+				Penguin: true, // ❌ Lower volume
+				Saros: true, // ❌ Less liquid
+				Sencha: true, // ❌ Slower execution
+				"Saber (Decimals)": true, // ❌ Redundant with main Saber
+				"Marco Polo": true, // ❌ Lower liquidity
+				Oasis: true, // ❌ Less profitable
+				BonkSwap: true, // ❌ Meme-focused, volatile
+
 				// RISKY/EXCLUDED - KEEP DISABLED
-				'Cropper': true,            // ❌ Potentially risky
-				'Cykura': true,             // ❌ Potentially risky
-				'GooseFX': true,            // ❌ Potentially risky
-				'Serum': true,              // ❌ Order book, not AMM
-				'Stepn': true,              // ❌ Potentially risky
-				'Dradex': true,             // ❌ Potentially risky
-				'Balansol': true,           // ❌ Potentially risky
-				'Symmetry': true,           // ❌ Potentially risky
-				'Unknown': true,            // ❌ Unknown protocols
-			}
+				Cropper: true, // ❌ Potentially risky
+				Cykura: true, // ❌ Potentially risky
+				GooseFX: true, // ❌ Potentially risky
+				Serum: true, // ❌ Order book, not AMM
+				Stepn: true, // ❌ Potentially risky
+				Dradex: true, // ❌ Potentially risky
+				Balansol: true, // ❌ Potentially risky
+				Symmetry: true, // ❌ Potentially risky
+				Unknown: true, // ❌ Unknown protocols
+			},
 		});
 		cache.isSetupDone = true;
-		spinner.succeed("Bot setup completed successfully!\n====================\n");
+		spinner.succeed(
+			"Bot setup completed successfully!\n====================\n"
+		);
 		return { jupiter, tokenA, tokenB, wallet };
 	} catch (error) {
 		if (spinner)
@@ -230,7 +248,9 @@ const getInitialotherAmountThreshold = async (
 ) => {
 	let spinner;
 	try {
-		const tokenDecimals = cache.sideBuy ? inputToken.decimals : outputToken.decimals;
+		const tokenDecimals = cache.sideBuy
+			? inputToken.decimals
+			: outputToken.decimals;
 		const spinnerText = `Computing routes for the token with amountToTrade ${amountToTrade} with decimals ${tokenDecimals}`;
 
 		spinner = ora({
@@ -254,7 +274,13 @@ const getInitialotherAmountThreshold = async (
 		});
 
 		if (routes?.routesInfos?.length > 0) spinner.succeed("Routes computed!");
-		else spinner.fail("No routes found. Something is wrong! Check tokens:"+inputToken.address+" "+outputToken.address);
+		else
+			spinner.fail(
+				"No routes found. Something is wrong! Check tokens:" +
+					inputToken.address +
+					" " +
+					outputToken.address
+			);
 
 		return routes.routesInfos[0].otherAmountThreshold;
 	} catch (error) {

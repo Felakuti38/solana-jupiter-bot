@@ -29,6 +29,7 @@
 		"axios": "^0.27.2",
 		"bs58": "^5.0.0",
 		"cliui": "^7.0.4",
+		"dotenv": "^17.2.1",
 		"express": "4.17.1",
 		"gradient-string": "^2.0.1",
 		"import-jsx": "^4.0.1",
@@ -47,6 +48,7 @@
 		"ora-classic": "^5.4.2",
 		"promise-retry": "^2.0.1",
 		"react": "^17.0.2",
+		"rpc-websockets": "7.5.1",
 		"strip-ansi": "^7.0.1"
 	},
 	"ava": {
