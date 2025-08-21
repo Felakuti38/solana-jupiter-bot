@@ -13,6 +13,7 @@ const {
 	checkRoutesResponse,
 	preTradeSafetyCheck,
 } = require("../utils");
+const { TRADING_CONSTANTS } = require("../utils/constants");
 const { handleExit, logExit } = require("./exit");
 const cache = require("./cache");
 global.cache = cache; // Make cache globally accessible for safety checks
@@ -21,13 +22,12 @@ const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
 
 const waitabit = async (ms) => {
-	const mySecondPromise = new Promise(function(resolve,reject){
-		console.log('construct a promise...')
+	return new Promise((resolve) => {
 		setTimeout(() => {
-			reject(console.log('Error in promise'));
-		},ms)
-	})
-}
+			resolve();
+		}, ms);
+	});
+};
 
 function getRandomAmt(runtime) {
 	const min = Math.ceil((runtime*10000)*0.99);
@@ -67,7 +67,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 			outputMint: new PublicKey(outputToken.address),
 			amount: amountInJSBI,
 			slippageBps: slippage,
-			forceFetch: true,
+			forceFetch: false, // Use cached data when possible for better performance
 			onlyDirectRoutes: false,
 			filterTopNResult: 2,
 		});
@@ -98,11 +98,11 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 		if ((simulatedProfit > cache.config.minPercProfit) && cache.config.adaptiveSlippage == 1){
 				var slippagerevised = (100*(simulatedProfit-cache.config.minPercProfit+(slippage/100))).toFixed(3)
 
-				if (slippagerevised>500) {
+				if (slippagerevised > TRADING_CONSTANTS.MAX_SLIPPAGE) {
 					// Make sure on really big numbers it is only 30% of the total
-					slippagerevised = (0.3*slippagerevised).toFixed(3);
+					slippagerevised = (TRADING_CONSTANTS.SLIPPAGE_MULTIPLIER * slippagerevised).toFixed(3);
 				} else {
-					slippagerevised = (0.8*slippagerevised).toFixed(3);
+					slippagerevised = (TRADING_CONSTANTS.SLIPPAGE_REDUCTION_FACTOR * slippagerevised).toFixed(3);
 				}
 
 				//console.log("Setting slippage to "+slippagerevised);

@@ -5,6 +5,7 @@ const { logExit } = require("../bot/exit");
 const JSBI = require('jsbi');
 const bs58 = require("bs58");
 const { PublicKey, Connection, Keypair } = require("@solana/web3.js");
+const { TRADING_CONSTANTS } = require("./constants");
 require("dotenv").config();
 
 const createTempDir = () => !fs.existsSync("./temp") && fs.mkdirSync("./temp");
@@ -213,14 +214,14 @@ const analyzeTokenContract = async (tokenAddress, connection) => {
 		// Check if token has reasonable supply
 		if (metadata?.value?.data?.parsed?.info?.supply) {
 			const supply = Number(metadata.value.data.parsed.info.supply);
-			if (supply < 1000000) { // Less than 1M supply
+			if (supply < TRADING_CONSTANTS.MIN_SUPPLY) { // Less than 1M supply
 				riskScore += 20;
 				risks.push("Low supply token");
 			}
 		}
 
 		// Check decimals
-		if (metadata?.value?.data?.parsed?.info?.decimals > 18) {
+		if (metadata?.value?.data?.parsed?.info?.decimals > TRADING_CONSTANTS.MAX_DECIMALS) {
 			riskScore += 15;
 			risks.push("Unusual decimals");
 		}
@@ -470,18 +471,18 @@ const preTradeSafetyCheck = async (jupiter, route, token, balance, safetyLevel =
 				};
 			}
 			
-			// Check for excessive fees
-			const feePercentage = (simulation.fee / balance) * 100;
-			if (feePercentage > 5) { // More than 5% fee
-				if (global.cache) {
-					global.cache.safetyStats.failedSafetyChecks++;
-				}
-				return {
-					safe: false,
-					reason: `Excessive fees: ${feePercentage.toFixed(2)}%`,
-					details: { fee: simulation.fee, feePercentage }
-				};
+					// Check for excessive fees
+		const feePercentage = (simulation.fee / balance) * 100;
+		if (feePercentage > TRADING_CONSTANTS.MAX_FEE_PERCENTAGE) { // More than 5% fee
+			if (global.cache) {
+				global.cache.safetyStats.failedSafetyChecks++;
 			}
+			return {
+				safe: false,
+				reason: `Excessive fees: ${feePercentage.toFixed(2)}%`,
+				details: { fee: simulation.fee, feePercentage }
+			};
+		}
 		}
 
 		// 5. Calculate dynamic position size
