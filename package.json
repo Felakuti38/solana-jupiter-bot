@@ -26,7 +26,7 @@
 	],
 	"dependencies": {
 		"@coral-xyz/anchor": "^0",
-		"@jup-ag/api": "^6.0.0",
+		"@jup-ag/core": "^4.0.0-beta.21",
 		"@solana/web3.js": "^1.66.1",
 		"asciichart": "^1.5.25",
 		"axios": "^0.30.0",
