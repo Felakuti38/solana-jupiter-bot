@@ -14,7 +14,8 @@
 		"wizard": "node ./src/index.js",
 		"start": "node --no-deprecation ./src/index.js && node --no-deprecation ./src/bot/index.js",
 		"trade": "node --no-deprecation ./src/bot/index.js",
-		"test": "xo && ava",
+		"lint": "xo",
+		"test": "ava",
 		"transaction": "node ./src/utils/transaction.js"
 	},
 	"files": [
