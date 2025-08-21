@@ -160,6 +160,24 @@ const setup = async () => {
 
 		spinner.text = "Loading the Jupiter V4 SDK and getting ready to trade...";
 
+		// Build dynamic AMM exclusion map from selected strategy
+		const allKnownAmms = [
+			// High liquidity
+			'Raydium', 'Raydium CLMM', 'Orca', 'Orca (Whirlpools)', 'Openbook', 'Phoenix',
+			// Medium liquidity
+			'Meteora', 'Lifinity', 'Lifinity V2', 'Saber', 'Mercurial',
+			// Slower/less profitable
+			'Aldrin', 'Crema', 'DeltaFi', 'Invariant', 'Marinade', 'Penguin', 'Saros', 'Sencha', 'Saber (Decimals)', 'Marco Polo', 'Oasis', 'BonkSwap',
+			// Risky/unknown
+			'Cropper', 'Cykura', 'GooseFX', 'Serum', 'Stepn', 'Dradex', 'Balansol', 'Symmetry', 'Unknown'
+		];
+
+		const enabledAmms = new Set(ammConfig.enabled || []);
+		const ammsToExclude = allKnownAmms.reduce((acc, amm) => {
+			acc[amm] = !enabledAmms.has(amm);
+			return acc;
+		}, {});
+
 		const jupiter = await Jupiter.load({
 			connection,
 			cluster: cache.config.network,
@@ -167,47 +185,7 @@ const setup = async () => {
 			restrictIntermediateTokens: false,
 			shouldLoadSerumOpenOrders: false,
 			wrapUnwrapSOL: cache.wrapUnwrapSOL,
-			ammsToExclude: {
-				// HIGH LIQUIDITY - KEEP ENABLED (Fast, Profitable)
-				'Raydium': false,           // ✅ Major DEX, high liquidity
-				'Raydium CLMM': false,      // ✅ Concentrated liquidity
-				'Orca': false,              // ✅ User-friendly, good liquidity
-				'Orca (Whirlpools)': false, // ✅ Concentrated liquidity
-				'Openbook': false,          // ✅ Order book, deep liquidity
-				'Phoenix': false,           // ✅ Order book, good liquidity
-				
-				// MEDIUM LIQUIDITY - KEEP ENABLED (Balanced)
-				'Meteora': false,           // ✅ Concentrated liquidity
-				'Lifinity': false,          // ✅ Good for stable pairs
-				'Lifinity V2': false,       // ✅ Updated version
-				'Saber': false,             // ✅ Stable asset specialist
-				'Mercurial': false,         // ✅ Stable asset AMM
-				
-				// SLOWER/LESS PROFITABLE - DISABLE
-				'Aldrin': true,             // ❌ Slower execution
-				'Crema': true,              // ❌ Lower liquidity
-				'DeltaFi': true,            // ❌ Less profitable
-				'Invariant': true,          // ❌ Slower route finding
-				'Marinade': true,           // ❌ Staking focused, not trading
-				'Penguin': true,            // ❌ Lower volume
-				'Saros': true,              // ❌ Less liquid
-				'Sencha': true,             // ❌ Slower execution
-				'Saber (Decimals)': true,   // ❌ Redundant with main Saber
-				'Marco Polo': true,         // ❌ Lower liquidity
-				'Oasis': true,              // ❌ Less profitable
-				'BonkSwap': true,           // ❌ Meme-focused, volatile
-				
-				// RISKY/EXCLUDED - KEEP DISABLED
-				'Cropper': true,            // ❌ Potentially risky
-				'Cykura': true,             // ❌ Potentially risky
-				'GooseFX': true,            // ❌ Potentially risky
-				'Serum': true,              // ❌ Order book, not AMM
-				'Stepn': true,              // ❌ Potentially risky
-				'Dradex': true,             // ❌ Potentially risky
-				'Balansol': true,           // ❌ Potentially risky
-				'Symmetry': true,           // ❌ Potentially risky
-				'Unknown': true,            // ❌ Unknown protocols
-			}
+			ammsToExclude,
 		});
 		cache.isSetupDone = true;
 		spinner.succeed("Bot setup completed successfully!\n====================\n");

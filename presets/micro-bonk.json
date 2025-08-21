@@ -1,0 +1,33 @@
+{
+  "network": "mainnet-beta",
+  "rpc": [
+    "https://api.mainnet-beta.solana.com"
+  ],
+  "tradingStrategy": "arbitrage",
+  "tokenA": {
+    "symbol": "BONK",
+    "address": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    "decimals": 5
+  },
+  "slippage": 50,
+  "adaptiveSlippage": 0,
+  "priority": 1000,
+  "minPercProfit": 2.0,
+  "minInterval": 500,
+  "tradeSize": {
+    "value": 1.0,
+    "strategy": "fixed"
+  },
+  "ui": {
+    "defaultColor": "cyan"
+  },
+  "storeFailedTxInHistory": true,
+  "advanced": {
+    "ammStrategy": "FAST",
+    "safetyLevel": "FAST",
+    "maxRiskPerTrade": 0.05,
+    "maxDailyLoss": 0.2,
+    "maxConcurrentTrades": 1,
+    "cooldownPeriod": 1000
+  }
+}
