@@ -26,16 +26,60 @@ const CONFIG_INITIAL_STATE = {
 			isSet: false,
 			state: {
 				items: [
+					// Primary RPC from environment variable
 					{
-						label: process.env.DEFAULT_RPC,
-						value: process.env.DEFAULT_RPC,
+						label: process.env.DEFAULT_RPC || "https://api.mainnet-beta.solana.com",
+						value: process.env.DEFAULT_RPC || "https://api.mainnet-beta.solana.com",
 						isSelected: true,
 					},
-					...String(process.env.ALT_RPC_LIST)
+					// Comprehensive RPC list
+					{
+						label: "Helius (Premium) - https://mainnet.helius-rpc.com/?api-key=YOUR_KEY",
+						value: "https://mainnet.helius-rpc.com/?api-key=YOUR_KEY",
+						isSelected: false,
+					},
+					{
+						label: "GS Node (Premium) - https://rpc.gsnode.io",
+						value: "https://rpc.gsnode.io",
+						isSelected: false,
+					},
+					{
+						label: "Chainstack (Premium) - https://solana-mainnet.chainstacklabs.com",
+						value: "https://solana-mainnet.chainstacklabs.com",
+						isSelected: false,
+					},
+					{
+						label: "QuickNode (Premium) - https://solana-mainnet.rpc.quicknode.com",
+						value: "https://solana-mainnet.rpc.quicknode.com",
+						isSelected: false,
+					},
+					{
+						label: "Ankr (Free/Premium) - https://rpc.ankr.com/solana",
+						value: "https://rpc.ankr.com/solana",
+						isSelected: false,
+					},
+					{
+						label: "dRPC (Free) - https://solana.drpc.org/",
+						value: "https://solana.drpc.org/",
+						isSelected: false,
+					},
+					{
+						label: "LeoRPC (Free) - https://solana.leorpc.com/?api_key=FREE",
+						value: "https://solana.leorpc.com/?api_key=FREE",
+						isSelected: false,
+					},
+					{
+						label: "Solana Foundation (Free) - https://api.mainnet-beta.solana.com",
+						value: "https://api.mainnet-beta.solana.com",
+						isSelected: false,
+					},
+					// Additional RPCs from environment variable
+					...String(process.env.ALT_RPC_LIST || "")
 						.split(",")
+						.filter(item => item.trim() !== "")
 						.map((item) => ({
-							label: item,
-							value: item,
+							label: `Custom RPC - ${item.trim()}`,
+							value: item.trim(),
 							isSelected: false,
 						})),
 				],
