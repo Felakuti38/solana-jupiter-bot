@@ -15,7 +15,10 @@
 		"start": "node --no-deprecation ./src/index.js && node --no-deprecation ./src/bot/index.js",
 		"trade": "node --no-deprecation ./src/bot/index.js",
 		"test": "xo && ava",
-		"transaction": "node ./src/utils/transaction.js"
+		"transaction": "node ./src/utils/transaction.js",
+		"update-deps": "node scripts/update-dependencies.js",
+		"security-audit": "yarn audit --fix",
+		"migrate-jupiter": "yarn add @jup-ag/api@^6.0.0 && yarn remove @jup-ag/core"
 	},
 	"files": [
 		"./src/index.js",
@@ -23,7 +26,7 @@
 	],
 	"dependencies": {
 		"@coral-xyz/anchor": "^0",
-		"@jup-ag/core": "^4.0.0-beta.21",
+		"@jup-ag/api": "^6.0.0",
 		"@solana/web3.js": "^1.66.1",
 		"asciichart": "^1.5.25",
 		"axios": "^0.27.2",
