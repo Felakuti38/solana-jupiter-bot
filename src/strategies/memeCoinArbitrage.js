@@ -193,26 +193,30 @@ class MemeCoinArbitrageStrategy {
 		const opportunities = [];
 
 		try {
-			// Get routes for A->B
+			// Get routes for A->B with CLMM protection
 			const routesAB = await jupiter.computeRoutes({
 				inputMint: new PublicKey(tokenA.address),
 				outputMint: new PublicKey(tokenB.address),
 				amount: amount,
 				slippageBps: slippage,
 				forceFetch: false,
-				onlyDirectRoutes: false,
-				filterTopNResult: 5, // Get top 5 routes
+				onlyDirectRoutes: true, // Prevent complex routing loops that cause CLMM issues
+				filterTopNResult: 2, // Reduced to minimize problematic routes
+				enforceSingleTx: true, // Single transaction to avoid complex routing
+				excludeDexes: ['Raydium CLMM'], // Exclude problematic CLMM DEX
 			});
 
-			// Get routes for B->A  
+			// Get routes for B->A with CLMM protection
 			const routesBA = await jupiter.computeRoutes({
 				inputMint: new PublicKey(tokenB.address),
 				outputMint: new PublicKey(tokenA.address),
 				amount: amount,
 				slippageBps: slippage,
 				forceFetch: false,
-				onlyDirectRoutes: false,
-				filterTopNResult: 5,
+				onlyDirectRoutes: true, // Prevent complex routing loops
+				filterTopNResult: 2, // Reduced to minimize problematic routes
+				enforceSingleTx: true, // Single transaction to avoid complex routing
+				excludeDexes: ['Raydium CLMM'], // Exclude problematic CLMM DEX
 			});
 
 			checkRoutesResponse(routesAB);

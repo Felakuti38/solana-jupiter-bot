@@ -213,7 +213,7 @@ class MicroTradingEngine {
 		try {
 			const amount = JSBI.BigInt(Math.floor(tradeSize * Math.pow(10, tokenA.decimals)));
 			
-			// Get routes with aggressive settings for speed
+			// Get routes with CLMM protection and speed optimization
 			const [routesAB, routesBA] = await Promise.all([
 				jupiter.computeRoutes({
 					inputMint: new PublicKey(tokenA.address),
@@ -221,8 +221,10 @@ class MicroTradingEngine {
 					amount: amount,
 					slippageBps: this.calculateDynamicSlippage(),
 					forceFetch: false,
-					onlyDirectRoutes: this.settings.fastMode,
-					filterTopNResult: 2,
+					onlyDirectRoutes: true, // Always use direct routes to prevent CLMM loops
+					filterTopNResult: 1, // Single best route to avoid problematic alternatives
+					enforceSingleTx: true, // Single transaction only
+					excludeDexes: ['Raydium CLMM'], // Exclude problematic CLMM
 				}),
 				jupiter.computeRoutes({
 					inputMint: new PublicKey(tokenB.address),
@@ -230,8 +232,10 @@ class MicroTradingEngine {
 					amount: amount,
 					slippageBps: this.calculateDynamicSlippage(),
 					forceFetch: false,
-					onlyDirectRoutes: this.settings.fastMode,
-					filterTopNResult: 2,
+					onlyDirectRoutes: true, // Always use direct routes to prevent CLMM loops
+					filterTopNResult: 1, // Single best route to avoid problematic alternatives
+					enforceSingleTx: true, // Single transaction only
+					excludeDexes: ['Raydium CLMM'], // Exclude problematic CLMM
 				})
 			]);
 

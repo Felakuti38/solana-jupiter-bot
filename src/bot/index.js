@@ -26,6 +26,9 @@ const { MemeCoinArbitrageStrategy } = require("../strategies/memeCoinArbitrage")
 const { MicroTradingEngine } = require("../strategies/microTradingEngine");
 const { getMemeCoinConfig } = require("../config/memeCoinConfig");
 
+// CLMM protection utility
+const { robustRouteComputation, isClmmRelatedError } = require("../utils/clmmProtection");
+
 const waitabit = async (ms) => {
 	return new Promise((resolve) => {
 		setTimeout(() => {
@@ -240,7 +243,7 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 		const inputToken = tokenA;
 		const outputToken = tokenA;
 
-		// check current routes
+		// check current routes with CLMM loop protection
 		const performanceOfRouteCompStart = performance.now();
 		const routes = await jupiter.computeRoutes({
 			inputMint: new PublicKey(inputToken.address),
@@ -248,11 +251,13 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			amount: amountInJSBI,
 			slippageBps: slippage,
 			feeBps: 0,
-			forceFetch: true,
-		    onlyDirectRoutes: false,
-            filterTopNResult: 2,
-			enforceSingleTx: false,
+			forceFetch: false, // Changed to false to use cached routes and avoid CLMM probing issues
+		    onlyDirectRoutes: true, // Changed to true to prevent complex routing loops
+            filterTopNResult: 1, // Reduced to 1 to get only the best route and avoid problematic alternatives
+			enforceSingleTx: true, // Changed to true to prevent complex multi-step routes
 			swapMode: 'ExactIn',
+			// Additional CLMM protection parameters
+			excludeDexes: cache.config.advanced?.excludeClmmDexes ? ['Raydium CLMM'] : undefined,
 		});
 
 		//console.log('Routes Lookup Run for '+ inputToken.address);
