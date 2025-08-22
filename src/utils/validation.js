@@ -130,8 +130,8 @@ const validateConfig = (config) => {
 	}
 	
 	// Validate strategy
-	if (!config.tradingStrategy || !['pingpong', 'arbitrage'].includes(config.tradingStrategy)) {
-		errors.push('Invalid trading strategy');
+	if (!config.tradingStrategy || !['pingpong', 'arbitrage', 'memecoin-arbitrage', 'micro-trading'].includes(config.tradingStrategy)) {
+		errors.push('Invalid trading strategy. Supported: pingpong, arbitrage, memecoin-arbitrage, micro-trading');
 	}
 	
 	// Validate tokens

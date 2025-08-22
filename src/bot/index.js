@@ -21,7 +21,7 @@ const { setup, getInitialotherAmountThreshold, checkTokenABalance } = require(".
 const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
 
-// Import new meme coin strategies
+// Enhanced meme coin and micro trading strategies
 const { MemeCoinArbitrageStrategy } = require("../strategies/memeCoinArbitrage");
 const { MicroTradingEngine } = require("../strategies/microTradingEngine");
 const { getMemeCoinConfig } = require("../config/memeCoinConfig");
@@ -153,114 +153,60 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 		// check profitability and execute tx
 		let tx, performanceOfTx;
 		if (
-			!cache.swappingRightNow &&
-			safetyCheck.safe &&
-			(cache.hotkeys.e ||
-				cache.hotkeys.r ||
-				simulatedProfit >= cache.config.minPercProfit)
+			simulatedProfit > cache.config.minPercProfit &&
+			safetyCheck.safe
 		) {
-			// hotkeys
-			if (cache.hotkeys.e) {
-				console.log("[E] PRESSED - EXECUTION FORCED BY USER!");
-				cache.hotkeys.e = false;
-			}
-			if (cache.hotkeys.r) {
-				console.log("[R] PRESSED - REVERT BACK SWAP!");
-				route.otherAmountThreshold = 0;
-			}
-
-			if (cache.tradingEnabled || cache.hotkeys.r) {
-				cache.swappingRightNow = true;
-				// store trade to the history
-				let tradeEntry = {
-					date: date.toLocaleString(),
-					buy: cache.sideBuy,
-					inputToken: inputToken.symbol,
-					outputToken: outputToken.symbol,
-					inAmount: toDecimal(route.amount, inputToken.decimals),
-					expectedOutAmount: toDecimal(route.outAmount, outputToken.decimals),
-					expectedProfit: simulatedProfit,
-					slippage: slippagerevised,
-				};
-
-				// start refreshing status
-				const printTxStatus = setInterval(() => {
-					if (cache.swappingRightNow) {
-						printToConsole({
-							date,
-							i,
-							performanceOfRouteComp,
-							inputToken,
-							outputToken,
-							tokenA,
-							tokenB,
-							route,
-							simulatedProfit,
-						});
-					}
-				}, 50);
-
-				[tx, performanceOfTx] = await swap(jupiter, route);
-
-				// stop refreshing status
-				clearInterval(printTxStatus);
-
-				const profit = calculateProfit(
-					cache.currentBalance[cache.sideBuy ? "tokenB" : "tokenA"],
-					tx.outputAmount
+			// announce
+			if (cache.config.tradingStrategy === "pingpong") {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] 🚀 TRADE: ${simulatedProfit.toFixed(
+						3
+					)}% | ${cache.sideBuy ? "Buy" : "Sell"}`
 				);
-
-				tradeEntry = {
-					...tradeEntry,
-					outAmount: tx.outputAmount || 0,
-					profit,
-					performanceOfTx,
-					error: tx.error?.code === 6001 ? "Slippage Tolerance Exceeded" : tx.error?.message || null,
-				};
-
-				var waittime = await waitabit(100);
-
-				// handle TX results
-				if (tx.error) {
-					await failedSwapHandler(tradeEntry, inputToken, amountToTrade);
-				}
-				else {
-					if (cache.hotkeys.r) {
-						console.log("[R] - REVERT BACK SWAP - SUCCESS!");
-						cache.tradingEnabled = false;
-						console.log("TRADING DISABLED!");
-						cache.hotkeys.r = false;
-					}
-					await successSwapHandler(tx, tradeEntry, tokenA, tokenB);
-				}
 			}
-		}
 
-		if (tx) {
-			if (!tx.error) {
-				// change side
+			// start trade
+			const performanceOfTxStart = performance.now();
+			tx = await swap(jupiter, route);
+			performanceOfTx = performance.now() - performanceOfTxStart;
+
+			// handle tx response
+			if (tx.success) {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] ✅ SUCCESS: ${tx.txid}`
+				);
+				await successSwapHandler(tx.txid, inputToken, outputToken, amountToTrade, route);
 				cache.sideBuy = !cache.sideBuy;
+			} else {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] ❌ FAILED: ${tx.error}`
+				);
+				await failedSwapHandler(route, i);
 			}
-			cache.swappingRightNow = false;
+		} else {
+			// announce
+			if (simulatedProfit <= cache.config.minPercProfit) {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] 🔴 SKIP: ${simulatedProfit.toFixed(
+						3
+					)}% | ${simulatedProfit.toFixed(3)}% <= ${cache.config.minPercProfit}%`
+				);
+			} else if (!safetyCheck.safe) {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] 🔴 SKIP: Safety check failed`
+				);
+			}
 		}
 
-		printToConsole({
-			date,
-			i,
-			performanceOfRouteComp,
-			inputToken,
-			outputToken,
-			tokenA,
-			tokenB,
-			route,
-			simulatedProfit,
-		});
-
-	} catch (error) {
+		// update status as complete
 		cache.queue[i] = 1;
-		console.log(error);
-	} finally {
-		delete cache.queue[i];
+
+		// wait a bit
+		await waitabit(cache.config.minInterval);
+	} catch (error) {
+		console.error(`❌ Error in pingpong strategy:`, error.message);
+		cache.queue[i] = 2;
+		await waitabit(cache.config.minInterval);
 	}
 };
 
@@ -357,7 +303,7 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			inputToken,
 			outputToken,
 			tokenA,
-			tokenB: tokenA,
+			tokenB,
 			route,
 			simulatedProfit,
 		});
@@ -371,117 +317,146 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			cache.config.advanced?.safetyLevel || 'BALANCED'
 		);
 
-		// Log safety check results
-		if (!safetyCheck.safe) {
-			console.log(`🚨 Safety check failed: ${safetyCheck.reason}`);
-			if (safetyCheck.details) {
-				console.log(`Details:`, safetyCheck.details);
-			}
-		}
-
 		// check profitability and execute tx
 		let tx, performanceOfTx;
-		if (
-			!cache.swappingRightNow &&
-			safetyCheck.safe &&
-			(cache.hotkeys.e ||
-				cache.hotkeys.r ||
-				simulatedProfit >= minPercProfitRnd)
-		) {
-			// hotkeys
-			if (cache.hotkeys.e) {
-				console.log("[E] PRESSED - EXECUTION FORCED BY USER!");
-				cache.hotkeys.e = false;
+		if (simulatedProfit > cache.config.minPercProfit && safetyCheck.safe) {
+			// announce
+			console.log(
+				`[${cache.config.tradingStrategy.toUpperCase()}] 🚀 TRADE: ${simulatedProfit.toFixed(
+					3
+				)}%`
+			);
+
+			// start trade
+			const performanceOfTxStart = performance.now();
+			tx = await swap(jupiter, route);
+			performanceOfTx = performance.now() - performanceOfTxStart;
+
+			// handle tx response
+			if (tx.success) {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] ✅ SUCCESS: ${tx.txid}`
+				);
+				await successSwapHandler(tx.txid, inputToken, outputToken, amountToTrade, route);
+			} else {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] ❌ FAILED: ${tx.error}`
+				);
+				await failedSwapHandler(route, i);
 			}
-			if (cache.hotkeys.r) {
-				console.log("[R] PRESSED - REVERT BACK SWAP!");
-				route.otherAmountThreshold = 0;
-			}
-
-			if (cache.tradingEnabled || cache.hotkeys.r) {
-				cache.swappingRightNow = true;
-				// store trade to the history
-				console.log('swappingRightNow');
-				let tradeEntry = {
-					date: date.toLocaleString(),
-					buy: cache.sideBuy,
-					inputToken: inputToken.symbol,
-					outputToken: outputToken.symbol,
-					inAmount: toDecimal(route.amount, inputToken.decimals),
-					expectedOutAmount: toDecimal(route.outAmount, outputToken.decimals),
-					expectedProfit: simulatedProfit,
-				};
-
-				// start refreshing status
-				const printTxStatus = setInterval(() => {
-					if (cache.swappingRightNow) {
-						printToConsole({
-							date,
-							i,
-							performanceOfRouteComp,
-							inputToken,
-							outputToken,
-							tokenA,
-							tokenB: tokenA,
-							route,
-							simulatedProfit,
-						});
-					}
-				}, 250);
-
-				[tx, performanceOfTx] = await swap(jupiter, route);
-
-				// stop refreshing status
-				clearInterval(printTxStatus);
-
-				// Calculate the profit of the trade
-				const profit = calculateProfit(tradeEntry.inAmount, tx.outputAmount);
-
-				tradeEntry = {
-					...tradeEntry,
-					outAmount: tx.outputAmount || 0,
-					profit,
-					performanceOfTx,
-					error: tx.error?.code === 6001 ? "Slippage Tolerance Exceeded" : tx.error?.message || null,
-					slippage: slippagerevised,
-				};
-
-				// handle TX results
-				if (tx.error) {
-					// Slippage tolerance exceeded
-					await failedSwapHandler(tradeEntry, inputToken, amountToTrade);
-				} else {
-					if (cache.hotkeys.r) {
-						console.log("[R] - REVERT BACK SWAP - SUCCESS!");
-						cache.tradingEnabled = false;
-						console.log("TRADING DISABLED!");
-						cache.hotkeys.r = false;
-					}
-					await successSwapHandler(tx, tradeEntry, tokenA, tokenA);
-				}
+		} else {
+			// announce
+			if (simulatedProfit <= cache.config.minPercProfit) {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] 🔴 SKIP: ${simulatedProfit.toFixed(
+						3
+					)}% | ${simulatedProfit.toFixed(3)}% <= ${cache.config.minPercProfit}%`
+				);
+			} else if (!safetyCheck.safe) {
+				console.log(
+					`[${cache.config.tradingStrategy.toUpperCase()}] 🔴 SKIP: Safety check failed - ${safetyCheck.reason}`
+				);
 			}
 		}
 
-		if (tx) {
-			cache.swappingRightNow = false;
-		}
-
-		printToConsole({
-			date,
-			i,
-			performanceOfRouteComp,
-			inputToken,
-			outputToken,
-			tokenA,
-			tokenB: tokenA,
-			route,
-			simulatedProfit,
-		});
-	} catch (error) {
+		// update status as complete
 		cache.queue[i] = 1;
-		throw error;
-	} finally {
-		delete cache.queue[i];
+
+		// wait a bit
+		await waitabit(cache.config.minInterval);
+	} catch (error) {
+		console.error(`❌ Error in arbitrage strategy:`, error.message);
+		cache.queue[i] = 2;
+		await waitabit(cache.config.minInterval);
+	}
+};
+
+// Enhanced Meme Coin Arbitrage Strategy
+const memeCoinArbitrageStrategy = async (jupiter, tokenA, tokenB) => {
+	try {
+		console.log('🎭 Starting meme coin arbitrage strategy...');
+		const memeCoinStrategy = new MemeCoinArbitrageStrategy(cache.config, cache);
+		const result = await memeCoinStrategy.execute(jupiter, tokenA, tokenB);
+		
+		if (result.success) {
+			console.log(`🎯 Meme coin arbitrage successful: ${result.profit.toFixed(3)}% profit`);
+			// Update cache balances
+			cache.lastBalance.tokenA = cache.currentBalance.tokenA;
+			cache.lastBalance.tokenB = cache.currentBalance.tokenB;
+			
+			// Update statistics
+			cache.statistics = cache.statistics || { trades: 0, profits: 0, losses: 0 };
+			cache.statistics.trades++;
+			cache.statistics.profits++;
+			
+			console.log(`📊 Direction: ${result.direction}, TX: ${result.txHash}`);
+		} else {
+			console.log(`❌ Meme coin arbitrage failed: ${result.reason}`);
+			cache.statistics = cache.statistics || { trades: 0, profits: 0, losses: 0 };
+			cache.statistics.trades++;
+			cache.statistics.losses++;
+		}
+		
+		// Wait before next iteration
+		await waitabit(cache.config.minInterval || 1000);
+		
+		return result;
+	} catch (error) {
+		console.error('🚨 Meme coin arbitrage error:', error);
+		await waitabit(cache.config.minInterval || 1000);
+		return { success: false, error: error.message };
+	}
+};
+
+// Enhanced Micro Trading Strategy
+const microTradingStrategy = async (jupiter, tokenA, tokenB) => {
+	try {
+		console.log('⚡ Starting micro trading strategy...');
+		const microEngine = new MicroTradingEngine(cache.config, cache);
+		const strategy = cache.config.microTradingMode || 'arbitrage';
+		
+		const result = await microEngine.execute(jupiter, tokenA, tokenB, strategy);
+		
+		if (result.success) {
+			console.log(`⚡ Micro trading successful: ${result.profit.toFixed(3)}% profit`);
+			
+			// Handle ping pong side switching
+			if (strategy === 'pingpong') {
+				cache.sideBuy = !cache.sideBuy;
+				console.log(`🏓 Switched to ${cache.sideBuy ? 'BUY' : 'SELL'} side`);
+			}
+			
+			// Update cache balances
+			cache.lastBalance.tokenA = cache.currentBalance.tokenA;
+			cache.lastBalance.tokenB = cache.currentBalance.tokenB;
+			
+			// Update statistics
+			cache.statistics = cache.statistics || { trades: 0, profits: 0, losses: 0 };
+			cache.statistics.trades++;
+			cache.statistics.profits++;
+			
+			// Log micro trading metrics
+			const engineStatus = microEngine.getStatus();
+			if (engineStatus.metrics.totalTrades % 10 === 0 && engineStatus.metrics.totalTrades > 0) {
+				const successRate = ((engineStatus.metrics.successfulTrades / engineStatus.metrics.totalTrades) * 100).toFixed(1);
+				console.log(`📊 Micro Stats: ${engineStatus.metrics.totalTrades} trades, ${successRate}% success`);
+			}
+			
+		} else {
+			console.log(`❌ Micro trading failed: ${result.reason}`);
+			cache.statistics = cache.statistics || { trades: 0, profits: 0, losses: 0 };
+			cache.statistics.trades++;
+			cache.statistics.losses++;
+		}
+		
+		// Wait before next iteration
+		await waitabit(cache.config.minInterval || 1000);
+		
+		return result;
+	} catch (error) {
+		console.error('🚨 Micro trading error:', error);
+		await waitabit(cache.config.minInterval || 1000);
+		return { success: false, error: error.message };
 	}
 };
 
@@ -490,11 +465,19 @@ const watcher = async (jupiter, tokenA, tokenB) => {
 		!cache.swappingRightNow &&
 		Object.keys(cache.queue).length < cache.queueThrottle
 	) {
+		// Enhanced strategy routing with new strategies
 		if (cache.config.tradingStrategy === "pingpong") {
 			await pingpongStrategy(jupiter, tokenA, tokenB);
-		}
-		if (cache.config.tradingStrategy === "arbitrage") {
+		} else if (cache.config.tradingStrategy === "arbitrage") {
 			await arbitrageStrategy(jupiter, tokenA);
+		} else if (cache.config.tradingStrategy === "memecoin-arbitrage") {
+			await memeCoinArbitrageStrategy(jupiter, tokenA, tokenB);
+		} else if (cache.config.tradingStrategy === "micro-trading") {
+			await microTradingStrategy(jupiter, tokenA, tokenB);
+		} else {
+			// Default to pingpong for unknown strategies
+			console.log(`⚠️ Unknown strategy: ${cache.config.tradingStrategy}, defaulting to pingpong`);
+			await pingpongStrategy(jupiter, tokenA, tokenB);
 		}
 	}
 };
@@ -509,8 +492,8 @@ const run = async () => {
 		console.log(`Wallet Enabled: ${walpubkeyfull}`);
 		cache.walletpubkeyfull = walpubkeyfull;
 		cache.walletpubkey = walpubkeyfull.slice(0,5) + '...' + walpubkeyfull.slice(walpubkeyfull.length-3);
-		//console.log(cache.walletpubkey);
 
+		// Enhanced initialization for new strategies
 		if (cache.config.tradingStrategy === "pingpong") {
 			// set initial & current & last balance for tokenA
 			console.log('Trade Size is:'+cache.config.tradeSize.value);
@@ -535,8 +518,6 @@ const run = async () => {
 			cache.lastBalance.tokenB = cache.initialBalance.tokenB;
 		} else if (cache.config.tradingStrategy === "arbitrage") {
 			// set initial & current & last balance for tokenA
-			//console.log('Trade Size is:'+cache.config.tradeSize.value+' decimals:'+tokenA.decimals);
-
 			cache.initialBalance.tokenA = toNumber(
 				cache.config.tradeSize.value,
 				tokenA.decimals
@@ -552,7 +533,51 @@ const run = async () => {
 				console.log('Balance Lookup is too low for token: '+realbalanceTokenA+' < '+cache.initialBalance.tokenA);
 				process.exit();
 			}
+		} else if (cache.config.tradingStrategy === "memecoin-arbitrage" || cache.config.tradingStrategy === "micro-trading") {
+			// Enhanced setup for new strategies
+			console.log(`🎭 Setting up ${cache.config.tradingStrategy} strategy`);
+			console.log(`💰 Trade size: $${cache.config.tradeSize?.value || cache.config.tradeSize?.baseAmount || 1.0}`);
+			
+			const tradeSize = cache.config.tradeSize?.value || cache.config.tradeSize?.baseAmount || 1.0;
+			
+			cache.initialBalance.tokenA = toNumber(tradeSize, tokenA.decimals);
+			cache.currentBalance.tokenA = cache.initialBalance.tokenA;
+			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
+
+			// Check wallet balance
+			var realbalanceTokenA = await checkTokenABalance(tokenA, cache.initialBalance.tokenA);
+			
+			if (realbalanceTokenA < cache.initialBalance.tokenA) {
+				console.log(`⚠️ Insufficient balance: ${realbalanceTokenA} < ${cache.initialBalance.tokenA}`);
+				console.log(`💡 Consider reducing trade size or funding wallet`);
+			}
+
+			// Set up tokenB balance for meme coin strategies
+			try {
+				cache.initialBalance.tokenB = await getInitialotherAmountThreshold(
+					jupiter,
+					tokenA,
+					tokenB,
+					cache.initialBalance.tokenA
+				);
+				cache.lastBalance.tokenB = cache.initialBalance.tokenB;
+			} catch (error) {
+				console.log(`⚠️ Could not set tokenB balance: ${error.message}`);
+				cache.initialBalance.tokenB = 0;
+				cache.lastBalance.tokenB = 0;
+			}
+
+			// Initialize statistics
+			cache.statistics = { trades: 0, profits: 0, losses: 0, startTime: Date.now() };
+			
+			// Initialize sideBuy for ping pong mode
+			cache.sideBuy = true;
 		}
+
+		// Log strategy information
+		console.log(`🚀 Starting ${cache.config.tradingStrategy.toUpperCase()} strategy`);
+		console.log(`⚡ Min interval: ${cache.config.minInterval}ms`);
+		console.log(`🎯 Min profit: ${cache.config.minPercProfit}%`);
 
 		global.botInterval = setInterval(
 			() => watcher(jupiter, tokenA, tokenB),
