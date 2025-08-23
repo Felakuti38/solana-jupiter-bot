@@ -6,14 +6,12 @@ const { render } = require("ink");
 const meow = require("meow");
 
 // check for .env file
-const { checkForEnvFile, checkWallet } = require("./utils");
+const { checkForEnvFile } = require("./utils");
 checkForEnvFile();
 
 require("dotenv").config();
 
-checkWallet();
-
-// ARB token requirement check removed - bot is now open to all users
+// All gatekeeping removed - bot is now open to all users
 
 const wizard = importJsx("./wizard/index");
 

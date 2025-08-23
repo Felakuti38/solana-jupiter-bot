@@ -8,6 +8,8 @@ const chalk = require("chalk");
 const TRADING_STRATEGIES = [
 	{ label: "Ping Pong", value: "pingpong" },
 	{ label: "Arbitrage", value: "arbitrage" },
+	{ label: "🎭 Meme Coin Arbitrage", value: "memecoin-arbitrage" },
+	{ label: "⚡ Micro Trading", value: "micro-trading" },
 ];
 
 const Indicator = ({ label, value }) => {

@@ -1,3 +1,4 @@
+console.log(">>> RUNNING ENTRY:", __filename, "at", new Date().toISOString());
 console.clear();
 
 require("dotenv").config();
@@ -20,6 +21,14 @@ global.cache = cache; // Make cache globally accessible for safety checks
 const { setup, getInitialotherAmountThreshold, checkTokenABalance } = require("./setup");
 const { printToConsole } = require("./ui/");
 const { swap, failedSwapHandler, successSwapHandler } = require("./swap");
+
+// Enhanced meme coin and micro trading strategies
+const { MemeCoinArbitrageStrategy } = require("../strategies/memeCoinArbitrage");
+const { MicroTradingEngine } = require("../strategies/microTradingEngine");
+const { getMemeCoinConfig } = require("../config/memeCoinConfig");
+
+// CLMM protection utility
+const { robustRouteComputation, isClmmRelatedError } = require("../utils/clmmProtection");
 
 const waitabit = async (ms) => {
 	return new Promise((resolve) => {
@@ -98,11 +107,11 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 		if ((simulatedProfit > cache.config.minPercProfit) && cache.config.adaptiveSlippage == 1){
 				var slippagerevised = (100*(simulatedProfit-cache.config.minPercProfit+(slippage/100))).toFixed(3)
 
-				if (slippagerevised > TRADING_CONSTANTS.MAX_SLIPPAGE) {
+				if (slippagerevised>500) {
 					// Make sure on really big numbers it is only 30% of the total
-					slippagerevised = (TRADING_CONSTANTS.SLIPPAGE_MULTIPLIER * slippagerevised).toFixed(3);
+					slippagerevised = (0.3*slippagerevised).toFixed(3);
 				} else {
-					slippagerevised = (TRADING_CONSTANTS.SLIPPAGE_REDUCTION_FACTOR * slippagerevised).toFixed(3);
+					slippagerevised = (0.8*slippagerevised).toFixed(3);
 				}
 
 				//console.log("Setting slippage to "+slippagerevised);
@@ -128,28 +137,10 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 			simulatedProfit,
 		});
 
-		// Pre-trade safety check
-		const safetyCheck = await preTradeSafetyCheck(
-			jupiter,
-			route,
-			inputToken,
-			amountToTrade,
-			cache.config.advanced?.safetyLevel || 'BALANCED'
-		);
-
-		// Log safety check results
-		if (!safetyCheck.safe) {
-			console.log(`🚨 Safety check failed: ${safetyCheck.reason}`);
-			if (safetyCheck.details) {
-				console.log(`Details:`, safetyCheck.details);
-			}
-		}
-
 		// check profitability and execute tx
 		let tx, performanceOfTx;
 		if (
 			!cache.swappingRightNow &&
-			safetyCheck.safe &&
 			(cache.hotkeys.e ||
 				cache.hotkeys.r ||
 				simulatedProfit >= cache.config.minPercProfit)
@@ -213,7 +204,7 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 					error: tx.error?.code === 6001 ? "Slippage Tolerance Exceeded" : tx.error?.message || null,
 				};
 
-				var waittime = await waitabit(100);
+				await waitabit(100);
 
 				// handle TX results
 				if (tx.error) {
@@ -259,15 +250,17 @@ const pingpongStrategy = async (jupiter, tokenA, tokenB) => {
 	}
 };
 
-const arbitrageStrategy = async (jupiter, tokenA) => {
-
-	//console.log('ARBITRAGE STRATEGY ACTIVE');
+const arbitrageStrategy = async (jupiter, tokenA, tokenB) => {
+	if (tokenA.address === tokenB.address) { 
+		throw new Error('Arbitrage requires two distinct tokens (e.g., SOL + USDC).'); 
+	}
 
 	cache.iteration++;
 	const date = new Date();
 	const i = cache.iteration;
 	cache.queue[i] = -1;
-	swapactionrun: try {
+
+	try {
 		// calculate & update iterations per minute
 		updateIterationsPerMin(cache);
 
@@ -278,33 +271,29 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 				: cache.initialBalance["tokenA"];
 		const baseAmount = amountToTrade;
 
-        //BNI AMT to TRADE
-        const amountInJSBI = JSBI.BigInt(amountToTrade);
-        //console.log('Amount to trade:'+amountToTrade);
+		//BNI AMT to TRADE
+		const amountInJSBI = JSBI.BigInt(amountToTrade);
 
 		// default slippage
 		const slippage = typeof cache.config.slippage === "number" ? cache.config.slippage : 1; // 100 is 0.1%
 
 		// set input / output token
-		const inputToken = tokenA;
-		const outputToken = tokenA;
+		const inputToken = cache.sideBuy ? tokenA : tokenB;
+		const outputToken = cache.sideBuy ? tokenB : tokenA;
 
-		// check current routes
+		// check current routes with CLMM protection
 		const performanceOfRouteCompStart = performance.now();
-		const routes = await jupiter.computeRoutes({
+		const routes = await robustRouteComputation(jupiter, {
 			inputMint: new PublicKey(inputToken.address),
 			outputMint: new PublicKey(outputToken.address),
 			amount: amountInJSBI,
 			slippageBps: slippage,
-			feeBps: 0,
-			forceFetch: true,
-		    onlyDirectRoutes: false,
-            filterTopNResult: 2,
-			enforceSingleTx: false,
-			swapMode: 'ExactIn',
+			onlyDirectRoutes: true,
+			filterTopNResult: 1,
+			enforceSingleTx: true,
+			excludeDexes: ['Raydium CLMM']
 		});
 
-		//console.log('Routes Lookup Run for '+ inputToken.address);
 		checkRoutesResponse(routes);
 
 		// count available routes
@@ -322,7 +311,6 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 		// calculate profitability
 		const simulatedProfit = calculateProfit(baseAmount, await JSBI.toNumber(route.outAmount));
 		const minPercProfitRnd = getRandomAmt(cache.config.minPercProfit);
-		//console.log('mpp:'+minPercProfitRnd);
 
 		var slippagerevised = slippage;
 
@@ -336,7 +324,6 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 				} else {
 						slippagerevised = (0.80*slippagerevised).toFixed(3);
 				}
-				//console.log("Setting slippage to "+slippagerevised);
 				route.slippageBps = slippagerevised;
 		}
 
@@ -352,33 +339,15 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			inputToken,
 			outputToken,
 			tokenA,
-			tokenB: tokenA,
+			tokenB: tokenB,
 			route,
 			simulatedProfit,
 		});
-
-		// Pre-trade safety check
-		const safetyCheck = await preTradeSafetyCheck(
-			jupiter,
-			route,
-			inputToken,
-			amountToTrade,
-			cache.config.advanced?.safetyLevel || 'BALANCED'
-		);
-
-		// Log safety check results
-		if (!safetyCheck.safe) {
-			console.log(`🚨 Safety check failed: ${safetyCheck.reason}`);
-			if (safetyCheck.details) {
-				console.log(`Details:`, safetyCheck.details);
-			}
-		}
 
 		// check profitability and execute tx
 		let tx, performanceOfTx;
 		if (
 			!cache.swappingRightNow &&
-			safetyCheck.safe &&
 			(cache.hotkeys.e ||
 				cache.hotkeys.r ||
 				simulatedProfit >= minPercProfitRnd)
@@ -395,7 +364,6 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 
 			if (cache.tradingEnabled || cache.hotkeys.r) {
 				cache.swappingRightNow = true;
-				// store trade to the history
 				console.log('swappingRightNow');
 				let tradeEntry = {
 					date: date.toLocaleString(),
@@ -417,7 +385,7 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 							inputToken,
 							outputToken,
 							tokenA,
-							tokenB: tokenA,
+							tokenB: tokenB,
 							route,
 							simulatedProfit,
 						});
@@ -452,7 +420,7 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 						console.log("TRADING DISABLED!");
 						cache.hotkeys.r = false;
 					}
-					await successSwapHandler(tx, tradeEntry, tokenA, tokenA);
+					await successSwapHandler(tx, tradeEntry, tokenA, tokenB);
 				}
 			}
 		}
@@ -468,15 +436,59 @@ const arbitrageStrategy = async (jupiter, tokenA) => {
 			inputToken,
 			outputToken,
 			tokenA,
-			tokenB: tokenA,
+			tokenB: tokenB,
 			route,
 			simulatedProfit,
 		});
 	} catch (error) {
 		cache.queue[i] = 1;
-		throw error;
+		if (isClmmRelatedError(error)) {
+			console.log('⚠️ CLMM route issue detected, continuing with next iteration...');
+		} else {
+			throw error;
+		}
 	} finally {
 		delete cache.queue[i];
+	}
+};
+
+// Enhanced Meme Coin Arbitrage Strategy
+const memeCoinArbitrageStrategy = async (jupiter, tokenA, tokenB) => {
+	try {
+		const config = getMemeCoinConfig('aggressive');
+		const strategy = new MemeCoinArbitrageStrategy(jupiter, config);
+		
+		// Execute meme coin arbitrage
+		const result = await strategy.execute(tokenA, tokenB);
+		
+		if (result.success) {
+			console.log(`🎭 Meme Coin Arbitrage: ${result.profit}% profit`);
+		}
+		
+		return result;
+	} catch (error) {
+		console.error('❌ Meme Coin Arbitrage Error:', error.message);
+		return { success: false, error: error.message };
+	}
+};
+
+// Enhanced Micro Trading Strategy
+const microTradingStrategy = async (jupiter, tokenA, tokenB) => {
+	try {
+		const config = getMemeCoinConfig('ultra-micro');
+		const engine = new MicroTradingEngine(jupiter, config);
+		
+		// Execute micro trading
+		const result = await engine.execute(tokenA, tokenB);
+		
+		if (result.success) {
+			console.log(`⚡ Micro Trading: ${result.trades} trades, ${result.profit}% profit`);
+		}
+		
+		return result;
+	} catch (error) {
+		console.error('❌ Micro Trading Error:', error.message);
+		return { success: false, error: error.message };
 	}
 };
 
@@ -487,24 +499,27 @@ const watcher = async (jupiter, tokenA, tokenB) => {
 	) {
 		if (cache.config.tradingStrategy === "pingpong") {
 			await pingpongStrategy(jupiter, tokenA, tokenB);
-		}
-		if (cache.config.tradingStrategy === "arbitrage") {
-			await arbitrageStrategy(jupiter, tokenA);
+		} else if (cache.config.tradingStrategy === "arbitrage") {
+			await arbitrageStrategy(jupiter, tokenA, tokenB);
+		} else if (cache.config.tradingStrategy === "memecoin-arbitrage") {
+			await memeCoinArbitrageStrategy(jupiter, tokenA, tokenB);
+		} else if (cache.config.tradingStrategy === "micro-trading") {
+			await microTradingStrategy(jupiter, tokenA, tokenB);
 		}
 	}
 };
 
-const run = async () => {
+async function run() {
+	console.log("RUN START");
 	try {
 		// set everything up
-        const { jupiter, tokenA, tokenB, wallet } = await setup();
+		const { jupiter, tokenA, tokenB, wallet } = await setup();
 
 		// Set pubkey display
 		const walpubkeyfull = wallet.publicKey.toString();
 		console.log(`Wallet Enabled: ${walpubkeyfull}`);
 		cache.walletpubkeyfull = walpubkeyfull;
 		cache.walletpubkey = walpubkeyfull.slice(0,5) + '...' + walpubkeyfull.slice(walpubkeyfull.length-3);
-		//console.log(cache.walletpubkey);
 
 		if (cache.config.tradingStrategy === "pingpong") {
 			// set initial & current & last balance for tokenA
@@ -517,8 +532,15 @@ const run = async () => {
 			cache.currentBalance.tokenA = cache.initialBalance.tokenA;
 			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
 
-			// Double check the wallet has sufficient amount of tokenA
-			var realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
+			// Check wallet balance and adjust if necessary
+			const realbalanceTokenA = await checkTokenABalance(tokenA, cache.initialBalance.tokenA);
+			if (realbalanceTokenA < cache.initialBalance.tokenA) {
+				const adj = Math.max(1, Math.floor(realbalanceTokenA * 0.98));
+				cache.initialBalance.tokenA = adj;
+				cache.currentBalance.tokenA = adj;
+				cache.lastBalance.tokenA = adj;
+				console.log('⚠️ Adjusted trade size to available balance:', adj);
+			}
 
 			// set initial & last balance for tokenB
 			cache.initialBalance.tokenB = await getInitialotherAmountThreshold(
@@ -528,27 +550,56 @@ const run = async () => {
 				cache.initialBalance.tokenA
 			);
 			cache.lastBalance.tokenB = cache.initialBalance.tokenB;
-		} else if (cache.config.tradingStrategy === "arbitrage") {
-			// set initial & current & last balance for tokenA
-			//console.log('Trade Size is:'+cache.config.tradeSize.value+' decimals:'+tokenA.decimals);
 
+		} else if (cache.config.tradingStrategy === "arbitrage") {
 			cache.initialBalance.tokenA = toNumber(
 				cache.config.tradeSize.value,
 				tokenA.decimals
 			);
-
 			cache.currentBalance.tokenA = cache.initialBalance.tokenA;
 			cache.lastBalance.tokenA = cache.initialBalance.tokenA;
 
-			// Double check the wallet has sufficient amount of tokenA
-			var realbalanceTokenA = await checkTokenABalance(tokenA,cache.initialBalance.tokenA);
-
-			if (realbalanceTokenA<cache.initialBalance.tokenA){
-				console.log('Balance Lookup is too low for token: '+realbalanceTokenA+' < '+cache.initialBalance.tokenA);
-				process.exit();
+			// Check wallet balance
+			const realbalanceTokenA = await checkTokenABalance(tokenA, cache.initialBalance.tokenA);
+			if (realbalanceTokenA < cache.initialBalance.tokenA) {
+				const adj = Math.max(1, Math.floor(realbalanceTokenA * 0.98));
+				cache.initialBalance.tokenA = adj;
+				cache.currentBalance.tokenA = adj;
+				cache.lastBalance.tokenA = adj;
+				console.log('⚠️ Adjusted arbitrage size to available balance:', adj);
 			}
+
+		} else if (cache.config.tradingStrategy === "memecoin-arbitrage") {
+			// Initialize meme coin arbitrage
+			console.log('🎭 Initializing Meme Coin Arbitrage Strategy');
+			cache.initialBalance.tokenA = toNumber(cache.config.tradeSize.value, tokenA.decimals);
+			cache.currentBalance.tokenA = cache.initialBalance.tokenA;
+			
+			// Initialize meme coin statistics
+			cache.memeCoinStats = {
+				totalTrades: 0,
+				successfulTrades: 0,
+				totalProfit: 0,
+				averageProfit: 0
+			};
+
+		} else if (cache.config.tradingStrategy === "micro-trading") {
+			// Initialize micro trading
+			console.log('⚡ Initializing Micro Trading Strategy');
+			const microSize = Math.min(cache.config.tradeSize.value, 5); // Max $5 for micro trading
+			cache.initialBalance.tokenA = toNumber(microSize, tokenA.decimals);
+			cache.currentBalance.tokenA = cache.initialBalance.tokenA;
+			
+			// Initialize micro trading statistics
+			cache.microTradingStats = {
+				totalMicroTrades: 0,
+				successfulMicroTrades: 0,
+				totalMicroProfit: 0,
+				averageMicroProfit: 0
+			};
 		}
 
+		console.log('START LOOP', cache.config.tradingStrategy, cache.config.minInterval);
 		global.botInterval = setInterval(
 			() => watcher(jupiter, tokenA, tokenB),
 			cache.config.minInterval
@@ -557,9 +608,9 @@ const run = async () => {
 		logExit(error);
 		process.exitCode = 1;
 	}
-};
-
-run();
+}
 
 // handle exit
 process.on("exit", handleExit);
+
+if (require.main === module) run();

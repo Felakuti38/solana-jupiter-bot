@@ -73,10 +73,16 @@ const SAFETY_LEVELS = {
 
 const AMM_STRATEGIES = {
 	FAST: {
-		enabled: ['Raydium', 'Raydium CLMM', 'Orca', 'Openbook'],
-		description: 'Fastest execution, major DEXes only',
+		enabled: ['Raydium', 'Orca', 'Openbook'], // Removed 'Raydium CLMM' to prevent loop route issues
+		description: 'Fastest execution, major DEXes only (CLMM-safe)',
 		expectedLatency: 100, // ms
 		expectedSuccessRate: 0.95
+	},
+	FAST_WITH_CLMM: {
+		enabled: ['Raydium', 'Raydium CLMM', 'Orca', 'Openbook'],
+		description: 'Fastest execution including CLMM (may have loop route issues)',
+		expectedLatency: 100, // ms
+		expectedSuccessRate: 0.90
 	},
 	OPTIMIZED: {
 		enabled: [
